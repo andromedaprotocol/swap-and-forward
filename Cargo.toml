@@ -45,6 +45,8 @@ serde = { version = "1.0.197", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.58" }
 
 andromeda-std = {git = "https://github.com/andromedaprotocol/andromeda-core", package = "andromeda-std", branch = "development"}
+cw20 = "1.1.2"
+astroport = { git = "https://github.com/astroport-fi/astroport-core" } 
 
 [dev-dependencies]
 cw-multi-test = "2.0.0"
