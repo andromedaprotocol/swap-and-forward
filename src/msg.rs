@@ -24,5 +24,16 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
+pub enum Cw20HookMsg {
+    SwapAndForward {
+        dex: String,
+        to_asset: Asset,
+        forward_addr: Option<AndrAddr>,
+        forward_msg: Option<Binary>,
+        max_spread: Option<Decimal>,
+        minimum_receive: Option<Uint128>,
+    },
+}
+#[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {}
