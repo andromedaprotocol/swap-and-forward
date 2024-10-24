@@ -88,11 +88,7 @@ fn handle_receive_cw20(
     cw20_msg: Cw20ReceiveMsg,
 ) -> Result<Response, ContractError> {
     
-    let ExecuteContext { ref info, ref deps, .. } = ctx;
-
-    if FORWARD_REPLY_STATE.may_load(deps.as_ref().storage)?.is_some() {
-        return Err(ContractError::Unauthorized {});
-    }
+    let ExecuteContext { ref info, .. } = ctx;
 
     let amount = cw20_msg.amount;
     let sender = cw20_msg.sender;
@@ -141,10 +137,6 @@ fn execute_swap_and_forward(
     let fund = one_coin(&ctx.info).map_err(|_| ContractError::InvalidAsset {
         asset: "Invalid or missing coin".to_string(),
     })?;
-
-    if FORWARD_REPLY_STATE.may_load(ctx.deps.as_ref().storage)?.is_some() {
-        return Err(ContractError::Unauthorized {});
-    }
 
     let from_asset = Asset::NativeToken(fund.denom);
     let sender = AndrAddr::from_string(&ctx.info.sender);

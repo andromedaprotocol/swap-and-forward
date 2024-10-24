@@ -49,7 +49,7 @@ pub(crate) fn execute_swap_astroport_msg(
     ensure!(
         FORWARD_REPLY_STATE
             .may_load(deps.as_ref().storage)?
-            .is_some(),
+            .is_none(),
         ContractError::Unauthorized {}
     );
 
