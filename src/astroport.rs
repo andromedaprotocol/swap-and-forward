@@ -112,7 +112,10 @@ pub(crate) fn execute_swap_astroport_msg(
     Ok(SubMsg::reply_always(msg, MSG_SWAP_ID))
 }
 
-fn generate_asset_info_from_asset(deps: &Deps, asset: Asset) -> Result<AssetInfo, ContractError> {
+pub fn generate_asset_info_from_asset(
+    deps: &Deps,
+    asset: Asset,
+) -> Result<AssetInfo, ContractError> {
     match asset {
         Asset::Cw20Token(andr_addr) => {
             let contract_addr = andr_addr.get_raw_address(deps)?;

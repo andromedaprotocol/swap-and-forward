@@ -17,7 +17,7 @@ use cw_utils::one_coin;
 
 use crate::{
     astroport::execute_swap_astroport_msg,
-    msg::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg}, state::FORWARD_REPLY_STATE,
+    msg::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg},
 };
 
 const CONTRACT_NAME: &str = "crates.io:swap-and-forward";
@@ -87,7 +87,6 @@ fn handle_receive_cw20(
     ctx: ExecuteContext,
     cw20_msg: Cw20ReceiveMsg,
 ) -> Result<Response, ContractError> {
-    
     let ExecuteContext { ref info, .. } = ctx;
 
     let amount = cw20_msg.amount;
