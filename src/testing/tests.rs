@@ -38,7 +38,7 @@ mod test {
     use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 
     use crate::{
-        astroport::{generate_asset_info_from_asset, ASTRO_ROUTER_ADDRESS, MSG_SWAP_ID},
+        astroport::{generate_asset_info_from_asset, ASTROPORT_MSG_SWAP_ID, ASTRO_ROUTER_ADDRESS},
         contract::execute,
         msg::{Cw20HookMsg, ExecuteMsg},
         state::{ForwardReplyState, FORWARD_REPLY_STATE},
@@ -87,7 +87,7 @@ mod test {
             msg: to_json_binary(&msg).unwrap(),
             funds: vec![coin(from_amount.u128(), from_denom)],
         };
-        let sub_msg = SubMsg::reply_always(msg, MSG_SWAP_ID);
+        let sub_msg = SubMsg::reply_always(msg, ASTROPORT_MSG_SWAP_ID);
         Response::default().add_submessage(sub_msg)
     }
 
@@ -125,7 +125,7 @@ mod test {
             msg: to_json_binary(&astro_swap_hook_msg).unwrap(),
         };
         let msg = wasm_execute(cw20_contract, &send_msg, vec![]).unwrap();
-        let sub_msg = SubMsg::reply_always(msg, MSG_SWAP_ID);
+        let sub_msg = SubMsg::reply_always(msg, ASTROPORT_MSG_SWAP_ID);
         Response::default().add_submessage(sub_msg)
     }
 
