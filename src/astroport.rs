@@ -122,7 +122,7 @@ pub(crate) fn execute_swap_astroport_msg(
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AstroportSwapResponse {
-    pub offer_amount: Uint128, // remaining Asset that is not consumed by the swap operation
+    pub spread_amount: Uint128, // remaining Asset that is not consumed by the swap operation
     pub return_amount: Uint128, // amount of token_out swapped from astroport
 }
 
@@ -146,7 +146,7 @@ pub fn handle_astroport_swap(
     state: ForwardReplyState,
 ) -> Result<Response, ContractError> {
     let AstroportSwapResponse {
-        offer_amount,
+        spread_amount,
         return_amount,
     } = match parse_astroport_swap_reply(msg) {
         Ok(resp) => resp,
@@ -161,6 +161,17 @@ pub fn handle_astroport_swap(
                 denom: denom.to_string(),
                 amount: return_amount,
             }];
+            let contract_balances = deps
+                .querier
+                .query_all_balances(env.contract.address.clone())?;
+            let contract_balance = deps
+                .querier
+                .query_balance(env.contract.address.clone(), denom)?;
+            if contract_balance.amount < return_amount {
+                return Err(ContractError::Std(StdError::generic_err(format!(
+                    "Invalid balance: contract_balances: {:?}, contract_balance: {:?}, denom: {:?}, contract_address: {:?}",contract_balances, contract_balance, denom, env.contract.address.clone()
+                ))));
+            }
 
             let mut pkt = if let Some(amp_ctx) = state.amp_ctx.clone() {
                 AMPPkt::new(amp_ctx.get_origin(), amp_ctx.get_previous_sender(), vec![])
@@ -204,12 +215,12 @@ pub fn handle_astroport_swap(
         attr("forward_addr", state.addr),
         attr("kernel_address", kernel_address),
     ]);
-    if !offer_amount.is_zero() {
+    if !spread_amount.is_zero() {
         let refund_msg = match &state.from_asset {
             Asset::NativeToken(denom) => {
                 let funds = vec![Coin {
                     denom: denom.to_string(),
-                    amount: offer_amount,
+                    amount: spread_amount,
                 }];
 
                 let mut pkt = if let Some(amp_ctx) = state.amp_ctx {
@@ -258,7 +269,7 @@ pub(crate) fn parse_astroport_swap_reply(
     match msg.result {
         SubMsgResult::Ok(response) => {
             // Extract relevant information from events
-            let mut offer_amount = Uint128::zero();
+            let mut spread_amount = Uint128::zero();
             let mut return_amount = Uint128::zero();
 
             for event in response.events.iter() {
@@ -268,8 +279,8 @@ pub(crate) fn parse_astroport_swap_reply(
                             "return_amount" => {
                                 return_amount = Uint128::from_str(&attr.value)?;
                             }
-                            "offer_amount" => {
-                                offer_amount = Uint128::from_str(&attr.value)?;
+                            "spread_amount" => {
+                                spread_amount = Uint128::from_str(&attr.value)?;
                             }
                             _ => {}
                         }
@@ -286,7 +297,7 @@ pub(crate) fn parse_astroport_swap_reply(
 
             Ok(AstroportSwapResponse {
                 return_amount,
-                offer_amount,
+                spread_amount,
             })
         }
         SubMsgResult::Err(err) => Err(ContractError::Std(StdError::generic_err(format!(

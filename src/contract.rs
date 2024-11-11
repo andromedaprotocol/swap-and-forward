@@ -219,9 +219,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
             FORWARD_REPLY_STATE.remove(deps.storage);
 
             if msg.result.is_err() {
-                Err(ContractError::Std(StdError::generic_err(
-                    msg.result.unwrap_err(),
-                )))
+                Err(ContractError::Std(StdError::generic_err(format!(
+                    "Astroport swap failed with error: {:?}",
+                    msg.result.unwrap_err()
+                ))))
             } else {
                 match state.dex.as_str() {
                     "astroport" => handle_astroport_swap(deps, env, msg, state),

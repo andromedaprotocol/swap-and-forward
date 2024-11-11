@@ -26,3 +26,4 @@ pub struct ForwardReplyState {
 }
 
 pub const FORWARD_REPLY_STATE: Item<ForwardReplyState> = Item::new("forward_reply_state");
+// MNEMONIC
