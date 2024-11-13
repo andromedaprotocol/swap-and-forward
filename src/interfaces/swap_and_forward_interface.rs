@@ -38,19 +38,18 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
         minimum_receive: Option<Uint128>,
         coins: &[Coin],
     ) {
-        self
-            .execute(
-                &ExecuteMsg::SwapAndForward {
-                    dex,
-                    to_asset,
-                    forward_addr,
-                    forward_msg,
-                    max_spread,
-                    minimum_receive,
-                },
-                Some(coins),
-            )
-            .unwrap();
+        self.execute(
+            &ExecuteMsg::SwapAndForward {
+                dex,
+                to_asset,
+                forward_addr,
+                forward_msg,
+                max_spread,
+                minimum_receive,
+            },
+            Some(coins),
+        )
+        .unwrap();
     }
     #[allow(clippy::too_many_arguments)]
     pub fn execute_swap_from_cw20(
@@ -86,6 +85,7 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
         };
         daemon
             .rt_handle
-            .block_on(async { daemon.sender().commit_tx(vec![exec_msg], None).await }).unwrap();
+            .block_on(async { daemon.sender().commit_tx(vec![exec_msg], None).await })
+            .unwrap();
     }
 }

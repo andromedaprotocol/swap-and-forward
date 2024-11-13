@@ -376,7 +376,7 @@ mod test {
 
     use cw_orch_daemon::{networks::PHOENIX_1, Daemon};
     use dotenv::dotenv;
-    // use cosmrs::{cosmwasm::MsgExecuteContract, AccountId, Denom};
+    #[ignore]
     #[test]
     fn test_onchain_native() {
         // 1. prepare environment and variables
@@ -441,9 +441,6 @@ mod test {
             None,
             &[coin(1000000, denom)],
         );
-        // 1000000
-        // 988698
-        // 181141277725
         // ==================================================================================== //
 
         // 5. manual astroswap operation via astroport router
@@ -475,6 +472,7 @@ mod test {
         // );
         // ==================================================================================== //
     }
+    #[ignore]
     #[test]
     fn test_onchain_cw20() {
         // 1. prepare environment and variables
@@ -539,7 +537,6 @@ mod test {
             None,
             None,
         );
-        // 181141277725
 
         // 5. Manual swap operation
         // let operations = vec![SwapOperation::AstroSwap {
