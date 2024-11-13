@@ -161,17 +161,6 @@ pub fn handle_astroport_swap(
                 denom: denom.to_string(),
                 amount: return_amount,
             }];
-            let contract_balances = deps
-                .querier
-                .query_all_balances(env.contract.address.clone())?;
-            let contract_balance = deps
-                .querier
-                .query_balance(env.contract.address.clone(), denom)?;
-            if contract_balance.amount < return_amount {
-                return Err(ContractError::Std(StdError::generic_err(format!(
-                    "Invalid balance: contract_balances: {:?}, contract_balance: {:?}, denom: {:?}, contract_address: {:?}",contract_balances, contract_balance, denom, env.contract.address.clone()
-                ))));
-            }
 
             let mut pkt = if let Some(amp_ctx) = state.amp_ctx.clone() {
                 AMPPkt::new(amp_ctx.get_origin(), amp_ctx.get_previous_sender(), vec![])
@@ -212,54 +201,10 @@ pub fn handle_astroport_swap(
         attr("dex", state.dex),
         attr("to_denom", state.to_asset.to_string()),
         attr("to_amount", return_amount),
+        attr("spread_amount", spread_amount),
         attr("forward_addr", state.addr),
         attr("kernel_address", kernel_address),
     ]);
-    if !spread_amount.is_zero() {
-        let refund_msg = match &state.from_asset {
-            Asset::NativeToken(denom) => {
-                let funds = vec![Coin {
-                    denom: denom.to_string(),
-                    amount: spread_amount,
-                }];
-
-                let mut pkt = if let Some(amp_ctx) = state.amp_ctx {
-                    AMPPkt::new(amp_ctx.get_origin(), amp_ctx.get_previous_sender(), vec![])
-                } else {
-                    AMPPkt::new(env.contract.address.clone(), env.contract.address, vec![])
-                };
-
-                let msg = AMPMsg::new(
-                    state
-                        .refund_addr
-                        .get_raw_address(&deps.as_ref())?
-                        .to_string(),
-                    Binary::default(),
-                    Some(funds.clone()),
-                );
-
-                pkt = pkt.add_message(msg);
-                let kernel_address = ADOContract::default().get_kernel_address(deps.storage)?;
-                pkt.to_sub_msg(kernel_address, Some(funds), ASTROPORT_MSG_FORWARD_ID)?
-            }
-            Asset::Cw20Token(andr_addr) => {
-                let transfer_msg = Cw20ExecuteMsg::Transfer {
-                    recipient: state
-                        .refund_addr
-                        .get_raw_address(&deps.as_ref())?
-                        .to_string(),
-                    amount: return_amount,
-                };
-                let wasm_msg = wasm_execute(
-                    andr_addr.get_raw_address(&deps.as_ref())?,
-                    &transfer_msg,
-                    vec![],
-                )?;
-                SubMsg::new(wasm_msg)
-            }
-        };
-        resp = resp.add_submessage(refund_msg);
-    };
     Ok(resp)
 }
 

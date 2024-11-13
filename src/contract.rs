@@ -232,9 +232,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         }
         ASTROPORT_MSG_FORWARD_ID => {
             if msg.result.is_err() {
-                return Err(ContractError::Std(StdError::generic_err(
-                    msg.result.unwrap_err(),
-                )));
+                return Err(ContractError::Std(StdError::generic_err(format!(
+                    "Astroport msg forwarding failed with error: {:?}",
+                    msg.result.unwrap_err()
+                ))));
             }
             Ok(Response::default()
                 .add_attributes(vec![attr("action", "message_forwarded_success")]))

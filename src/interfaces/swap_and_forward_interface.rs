@@ -27,6 +27,7 @@ impl<Chain> Uploadable for SwapAndForwardContract<Chain> {
 }
 
 impl SwapAndForwardContract<DaemonBase<Wallet>> {
+    #[allow(clippy::too_many_arguments)]
     pub fn execute_swap_from_native(
         self,
         dex: String,
@@ -37,7 +38,7 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
         minimum_receive: Option<Uint128>,
         coins: &[Coin],
     ) {
-        let res = self
+        self
             .execute(
                 &ExecuteMsg::SwapAndForward {
                     dex,
@@ -50,11 +51,8 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
                 Some(coins),
             )
             .unwrap();
-        println!(
-            "========================execute_swap_from_native res: {:?}",
-            res
-        );
     }
+    #[allow(clippy::too_many_arguments)]
     pub fn execute_swap_from_cw20(
         self,
         daemon: &Daemon,
@@ -75,7 +73,6 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
             max_spread,
             minimum_receive,
         };
-        println!("========================hook msg: {:?}", hook_msg);
         let cw_20_transfer_msg = cw20::Cw20ExecuteMsg::Send {
             contract: self.addr_str().unwrap(),
             amount: from_amount,
@@ -87,25 +84,8 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
             msg: serde_json::to_vec(&cw_20_transfer_msg).unwrap(),
             funds: vec![],
         };
-        let res = daemon
+        daemon
             .rt_handle
-            .block_on(async { daemon.sender().commit_tx(vec![exec_msg], None).await });
-        // let res = self
-        //     .execute(
-        //         &ExecuteMsg::SwapAndForward {
-        //             dex,
-        //             to_asset,
-        //             forward_addr,
-        //             forward_msg,
-        //             max_spread,
-        //             minimum_receive,
-        //         },
-        //         Some(coins),
-        //     )
-        //     .unwrap();
-        println!(
-            "========================execute_swap_from_cw20 res: {:?}",
-            res
-        );
+            .block_on(async { daemon.sender().commit_tx(vec![exec_msg], None).await }).unwrap();
     }
 }

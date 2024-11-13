@@ -25,7 +25,6 @@ mod test {
 
     use andromeda_app::app::AppComponent;
     use andromeda_std::{
-        ado_base::MigrateMsg,
         amp::AndrAddr,
         common::{denom::Asset, encode_binary},
         error::ContractError,
@@ -33,7 +32,7 @@ mod test {
     use astroport::router::{
         Cw20HookMsg as AstroCw20HookMsg, ExecuteMsg as AstroExecuteMsg, SwapOperation,
     };
-    use cosmrs::{cosmwasm::MsgExecuteContract, AccountId, Denom};
+    use cosmrs::AccountId;
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env, mock_info},
@@ -41,16 +40,13 @@ mod test {
         SubMsg, Uint128, WasmMsg,
     };
     use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
-    use cw_orch::prelude::{
-        ContractInstance, CwOrchExecute, CwOrchInstantiate, CwOrchMigrate, CwOrchUpload,
-    };
+    use cw_orch::prelude::ContractInstance;
 
     use crate::{
         astroport::{generate_asset_info_from_asset, ASTROPORT_MSG_SWAP_ID, ASTRO_ROUTER_ADDRESS},
         contract::execute,
         interfaces::{
-            adodb_interface::AdodbContract, app_interface::AppContract,
-            swap_and_forward_interface::SwapAndForwardContract,
+            app_interface::AppContract, swap_and_forward_interface::SwapAndForwardContract,
         },
         msg::{Cw20HookMsg, ExecuteMsg, InstantiateMsg},
         state::{ForwardReplyState, FORWARD_REPLY_STATE},
@@ -378,7 +374,7 @@ mod test {
         assert_eq!(res, Ok(Response::default().add_submessage(sub_msg)));
     }
 
-    use cw_orch_daemon::{networks::PHOENIX_1, Daemon, TxSender};
+    use cw_orch_daemon::{networks::PHOENIX_1, Daemon};
     use dotenv::dotenv;
     // use cosmrs::{cosmwasm::MsgExecuteContract, AccountId, Denom};
     #[test]
@@ -386,9 +382,9 @@ mod test {
         // 1. prepare environment and variables
         dotenv().ok();
         env_logger::init();
-        let MNEMONIC = std::env::var("MNEMONIC").expect("MNEMONIC must be set.");
+        let mnemonic = std::env::var("MNEMONIC").expect("MNEMONIC must be set.");
         let daemon = Daemon::builder(PHOENIX_1)
-            .mnemonic(MNEMONIC)
+            .mnemonic(mnemonic)
             .build()
             .unwrap();
         let denom = PHOENIX_1.gas_denom;
@@ -402,7 +398,7 @@ mod test {
         // swap_and_forward_contract.upload().unwrap();
         // println!("swap_and_forward_contract code_id: {:?}", swap_and_forward_contract.code_id().unwrap());
         // use code_id if contract is already uploaded
-        swap_and_forward_contract.set_code_id(3348);
+        swap_and_forward_contract.set_code_id(3351);
         // ==================================================================================== //
 
         // 3. prepare app ado
@@ -429,7 +425,8 @@ mod test {
         let swap_and_forward_addr =
             app_contract.query_address_by_component_name(swap_and_forward_component.name);
         swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
-        // swap_and_forward_contract.migrate(&MigrateMsg {}, swap_and_forward_contract.code_id().unwrap());
+        // swap_and_forward_contract
+        //     .migrate(&MigrateMsg {}, swap_and_forward_contract.code_id().unwrap());
         // ==================================================================================== //
 
         // 4. execute swap operation
@@ -442,7 +439,7 @@ mod test {
             None,
             None,
             None,
-            &vec![coin(1000000, denom)],
+            &[coin(1000000, denom)],
         );
         // 1000000
         // 988698
@@ -483,9 +480,10 @@ mod test {
         // 1. prepare environment and variables
         dotenv().ok();
         env_logger::init();
-        let MNEMONIC = std::env::var("MNEMONIC").expect("MNEMONIC must be set.");
+        let mnemonic = std::env::var("MNEMONIC").expect("MNEMONIC must be set.");
+
         let daemon = Daemon::builder(PHOENIX_1)
-            .mnemonic(MNEMONIC)
+            .mnemonic(mnemonic)
             .build()
             .unwrap();
         let denom = PHOENIX_1.gas_denom;
@@ -499,7 +497,7 @@ mod test {
         // swap_and_forward_contract.upload().unwrap();
         // println!("swap_and_forward_contract code_id: {:?}", swap_and_forward_contract.code_id().unwrap());
         // use code_id if contract is already uploaded
-        swap_and_forward_contract.set_code_id(3348);
+        swap_and_forward_contract.set_code_id(3350);
         // ==================================================================================== //
 
         // 3. prepare app ado
@@ -534,7 +532,7 @@ mod test {
             &daemon,
             "astroport".to_string(),
             "terra1lxx40s29qvkrcj8fsa3yzyehy7w50umdvvnls2r830rys6lu2zns63eelv",
-            Uint128::new(181141277725),
+            Uint128::new(187606528780),
             Asset::NativeToken(denom.to_string()),
             None,
             None,
@@ -542,5 +540,34 @@ mod test {
             None,
         );
         // 181141277725
+
+        // 5. Manual swap operation
+        // let operations = vec![SwapOperation::AstroSwap {
+        //     ask_asset_info: astroport::asset::AssetInfo::NativeToken { denom: denom.to_string() },
+        //     offer_asset_info: astroport::asset::AssetInfo::Token {contract_addr: Addr::unchecked("terra1lxx40s29qvkrcj8fsa3yzyehy7w50umdvvnls2r830rys6lu2zns63eelv")}
+        // }];
+
+        // let astro_swap_msg = AstroCw20HookMsg::ExecuteSwapOperations {
+        //     operations,
+        //     to: None,
+        //     max_spread: None,
+        //     minimum_receive: None,
+        // };
+        // let cw_20_transfer_msg = cw20::Cw20ExecuteMsg::Send {
+        //     contract: "terra1j8hayvehh3yy02c2vtw5fdhz9f4drhtee8p5n5rguvg3nyd6m83qd2y90a".to_string(),
+        //     amount: Uint128::new(187682936458),
+        //     msg: to_json_binary(&astro_swap_msg).unwrap(),
+        // };
+        // let exec_msg: MsgExecuteContract = MsgExecuteContract {
+        //     sender:  daemon.sender().account_id(),
+        //     contract: AccountId::from_str("terra1lxx40s29qvkrcj8fsa3yzyehy7w50umdvvnls2r830rys6lu2zns63eelv").unwrap(),
+        //     msg: serde_json::to_vec(&cw_20_transfer_msg).unwrap(),
+        //     funds: vec![],
+        // };
+        //  let result = daemon.rt_handle.block_on(
+        //     async {
+        //         daemon.sender().commit_tx(vec![exec_msg], None).await
+        //     }
+        // );
     }
 }
