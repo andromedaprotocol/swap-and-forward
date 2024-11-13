@@ -21,6 +21,9 @@ fn init(deps: DepsMut) -> Response {
 
 #[cfg(test)]
 mod test {
+    use std::str::FromStr;
+
+    use andromeda_app::app::AppComponent;
     use andromeda_std::{
         amp::AndrAddr,
         common::{denom::Asset, encode_binary},
@@ -29,18 +32,23 @@ mod test {
     use astroport::router::{
         Cw20HookMsg as AstroCw20HookMsg, ExecuteMsg as AstroExecuteMsg, SwapOperation,
     };
+    use cosmrs::AccountId;
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env, mock_info},
-        to_json_binary, wasm_execute, Binary, Decimal, DepsMut, Response, StdError, SubMsg,
-        Uint128, WasmMsg,
+        to_json_binary, wasm_execute, Addr, Binary, Decimal, DepsMut, Empty, Response, StdError,
+        SubMsg, Uint128, WasmMsg,
     };
     use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
+    use cw_orch::prelude::ContractInstance;
 
     use crate::{
-        astroport::{generate_asset_info_from_asset, ASTRO_ROUTER_ADDRESS, MSG_SWAP_ID},
+        astroport::{generate_asset_info_from_asset, ASTROPORT_MSG_SWAP_ID, ASTRO_ROUTER_ADDRESS},
         contract::execute,
-        msg::{Cw20HookMsg, ExecuteMsg},
+        interfaces::{
+            app_interface::AppContract, swap_and_forward_interface::SwapAndForwardContract,
+        },
+        msg::{Cw20HookMsg, ExecuteMsg, InstantiateMsg},
         state::{ForwardReplyState, FORWARD_REPLY_STATE},
     };
 
@@ -87,7 +95,7 @@ mod test {
             msg: to_json_binary(&msg).unwrap(),
             funds: vec![coin(from_amount.u128(), from_denom)],
         };
-        let sub_msg = SubMsg::reply_always(msg, MSG_SWAP_ID);
+        let sub_msg = SubMsg::reply_always(msg, ASTROPORT_MSG_SWAP_ID);
         Response::default().add_submessage(sub_msg)
     }
 
@@ -125,7 +133,7 @@ mod test {
             msg: to_json_binary(&astro_swap_hook_msg).unwrap(),
         };
         let msg = wasm_execute(cw20_contract, &send_msg, vec![]).unwrap();
-        let sub_msg = SubMsg::reply_always(msg, MSG_SWAP_ID);
+        let sub_msg = SubMsg::reply_always(msg, ASTROPORT_MSG_SWAP_ID);
         Response::default().add_submessage(sub_msg)
     }
 
@@ -313,5 +321,250 @@ mod test {
                 assert_eq!(state, expected_state, "Test case: {}", test_case.name);
             }
         }
+    }
+
+    #[test]
+    fn test_execute_swap() {
+        let mut deps = mock_dependencies();
+        init(deps.as_mut());
+        let denom = "uluna";
+        let env = mock_env();
+
+        let exec_msg = ExecuteMsg::SwapAndForward {
+            dex: "astroport".to_string(),
+            to_asset: Asset::Cw20Token(AndrAddr::from_string(
+                "terra1lxx40s29qvkrcj8fsa3yzyehy7w50umdvvnls2r830rys6lu2zns63eelv",
+            )),
+            forward_addr: None,
+            forward_msg: None,
+            max_spread: None,
+            minimum_receive: None,
+        };
+        let info = mock_info(SENDER, &[coin(1000000, denom)]);
+
+        let res = execute(deps.as_mut(), env.clone(), info, exec_msg);
+
+        let expected_operations = vec![SwapOperation::AstroSwap {
+            offer_asset_info: astroport::asset::AssetInfo::NativeToken {
+                denom: denom.to_string(),
+            },
+            ask_asset_info: astroport::asset::AssetInfo::Token {
+                contract_addr: Addr::unchecked(
+                    "terra1lxx40s29qvkrcj8fsa3yzyehy7w50umdvvnls2r830rys6lu2zns63eelv",
+                ),
+            },
+        }];
+        let expected_astro_swap_msg = AstroExecuteMsg::ExecuteSwapOperations {
+            operations: expected_operations,
+            to: None,
+            max_spread: None,
+            minimum_receive: None,
+        };
+
+        let exec_msg = WasmMsg::Execute {
+            contract_addr: AccountId::from_str(
+                "terra1j8hayvehh3yy02c2vtw5fdhz9f4drhtee8p5n5rguvg3nyd6m83qd2y90a",
+            )
+            .unwrap()
+            .to_string(),
+            msg: cosmwasm_std::Binary(serde_json::to_vec(&expected_astro_swap_msg).unwrap()),
+            funds: vec![coin(1000000, denom)],
+        };
+        let sub_msg: SubMsg<Empty> = SubMsg::reply_always(exec_msg, ASTROPORT_MSG_SWAP_ID);
+        assert_eq!(res, Ok(Response::default().add_submessage(sub_msg)));
+    }
+
+    use cw_orch_daemon::{networks::PHOENIX_1, Daemon};
+    use dotenv::dotenv;
+    #[ignore]
+    #[test]
+    fn test_onchain_native() {
+        // 1. prepare environment and variables
+        dotenv().ok();
+        env_logger::init();
+        let mnemonic = std::env::var("MNEMONIC").expect("MNEMONIC must be set.");
+        let daemon = Daemon::builder(PHOENIX_1)
+            .mnemonic(mnemonic)
+            .build()
+            .unwrap();
+        let denom = PHOENIX_1.gas_denom;
+        // ==================================================================================== //
+
+        // 2. prepare swap-and-forward ado
+        let swap_and_forward_contract =
+            SwapAndForwardContract::new("swap-and-forward", daemon.clone());
+
+        // upload contract (not needed if contract is already uploaded)
+        // swap_and_forward_contract.upload().unwrap();
+        // println!("swap_and_forward_contract code_id: {:?}", swap_and_forward_contract.code_id().unwrap());
+        // use code_id if contract is already uploaded
+        swap_and_forward_contract.set_code_id(3351);
+        // ==================================================================================== //
+
+        // 3. prepare app ado
+        let app_contract = AppContract::new("app-contract", daemon.clone());
+        app_contract.set_code_id(2834);
+
+        let swap_and_forward_init_msg = InstantiateMsg {
+            kernel_address: "terra1g0vzxc6a0layhxdwc24kwwam4v93pjmam5a77wtvfhzpdltp82estk3kpc"
+                .to_string(),
+            owner: None,
+        };
+        let swap_and_forward_component = AppComponent::new(
+            "swap-and-forward",
+            "swap-and-forward",
+            to_json_binary(&swap_and_forward_init_msg).unwrap(),
+        );
+
+        // 3.1 use initialized app contract if needed
+        app_contract.set_address(&Addr::unchecked(
+            "terra19xkd2kcggsh09gmn64xtzfnwayyuqyd3e393sw47el865xhu5fvs0h59za",
+        ));
+
+        // // 3.2 migrate app component if needed
+        let swap_and_forward_addr =
+            app_contract.query_address_by_component_name(swap_and_forward_component.name);
+        swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
+        // swap_and_forward_contract
+        //     .migrate(&MigrateMsg {}, swap_and_forward_contract.code_id().unwrap());
+        // ==================================================================================== //
+
+        // 4. execute swap operation
+        swap_and_forward_contract.execute_swap_from_native(
+            "astroport".to_string(),
+            Asset::Cw20Token(AndrAddr::from_string(
+                "terra1lxx40s29qvkrcj8fsa3yzyehy7w50umdvvnls2r830rys6lu2zns63eelv",
+            )),
+            None,
+            None,
+            None,
+            None,
+            &[coin(1000000, denom)],
+        );
+        // ==================================================================================== //
+
+        // 5. manual astroswap operation via astroport router
+        // let operations = vec![SwapOperation::AstroSwap {
+        //     offer_asset_info: astroport::asset::AssetInfo::NativeToken { denom: denom.to_string() },
+        //     ask_asset_info: astroport::asset::AssetInfo::Token {contract_addr: Addr::unchecked("terra1lxx40s29qvkrcj8fsa3yzyehy7w50umdvvnls2r830rys6lu2zns63eelv")}
+        // }];
+        // let astro_swap_msg = AstroExecuteMsg::ExecuteSwapOperations {
+        //     operations,
+        //     to: None,
+        //     max_spread: None,
+        //     minimum_receive: None,
+        // };
+        // let exec_msg: MsgExecuteContract = MsgExecuteContract {
+        //     sender: daemon.sender().account_id(),
+        //     contract: AccountId::from_str("terra1j8hayvehh3yy02c2vtw5fdhz9f4drhtee8p5n5rguvg3nyd6m83qd2y90a").unwrap(),
+        //     msg: serde_json::to_vec(&astro_swap_msg).unwrap(),
+        //     funds: vec![
+        //         cosmrs::Coin {
+        //             amount: 1000000,
+        //             denom: Denom::from_str(denom).unwrap()
+        //         }
+        //     ],
+        // };
+        // let result = daemon.rt_handle.block_on(
+        //     async {
+        //         daemon.sender().commit_tx(vec![exec_msg], None).await
+        //     }
+        // );
+        // ==================================================================================== //
+    }
+    #[ignore]
+    #[test]
+    fn test_onchain_cw20() {
+        // 1. prepare environment and variables
+        dotenv().ok();
+        env_logger::init();
+        let mnemonic = std::env::var("MNEMONIC").expect("MNEMONIC must be set.");
+
+        let daemon = Daemon::builder(PHOENIX_1)
+            .mnemonic(mnemonic)
+            .build()
+            .unwrap();
+        let denom = PHOENIX_1.gas_denom;
+        // ==================================================================================== //
+
+        // 2. prepare swap-and-forward ado
+        let swap_and_forward_contract =
+            SwapAndForwardContract::new("swap-and-forward", daemon.clone());
+
+        // upload contract (not needed if contract is already uploaded)
+        // swap_and_forward_contract.upload().unwrap();
+        // println!("swap_and_forward_contract code_id: {:?}", swap_and_forward_contract.code_id().unwrap());
+        // use code_id if contract is already uploaded
+        swap_and_forward_contract.set_code_id(3350);
+        // ==================================================================================== //
+
+        // 3. prepare app ado
+        let app_contract = AppContract::new("app-contract", daemon.clone());
+        app_contract.set_code_id(2834);
+
+        let swap_and_forward_init_msg = InstantiateMsg {
+            kernel_address: "terra1g0vzxc6a0layhxdwc24kwwam4v93pjmam5a77wtvfhzpdltp82estk3kpc"
+                .to_string(),
+            owner: None,
+        };
+        let swap_and_forward_component = AppComponent::new(
+            "swap-and-forward",
+            "swap-and-forward",
+            to_json_binary(&swap_and_forward_init_msg).unwrap(),
+        );
+
+        // 3.1 use initialized app contract if needed
+        app_contract.set_address(&Addr::unchecked(
+            "terra19xkd2kcggsh09gmn64xtzfnwayyuqyd3e393sw47el865xhu5fvs0h59za",
+        ));
+
+        // // 3.2 migrate app component if needed
+        let swap_and_forward_addr =
+            app_contract.query_address_by_component_name(swap_and_forward_component.name);
+        swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
+        // swap_and_forward_contract.migrate(&MigrateMsg {}, swap_and_forward_contract.code_id().unwrap());
+        // ==================================================================================== //
+
+        // 4. execute swap operation
+        swap_and_forward_contract.execute_swap_from_cw20(
+            &daemon,
+            "astroport".to_string(),
+            "terra1lxx40s29qvkrcj8fsa3yzyehy7w50umdvvnls2r830rys6lu2zns63eelv",
+            Uint128::new(187606528780),
+            Asset::NativeToken(denom.to_string()),
+            None,
+            None,
+            None,
+            None,
+        );
+
+        // 5. Manual swap operation
+        // let operations = vec![SwapOperation::AstroSwap {
+        //     ask_asset_info: astroport::asset::AssetInfo::NativeToken { denom: denom.to_string() },
+        //     offer_asset_info: astroport::asset::AssetInfo::Token {contract_addr: Addr::unchecked("terra1lxx40s29qvkrcj8fsa3yzyehy7w50umdvvnls2r830rys6lu2zns63eelv")}
+        // }];
+
+        // let astro_swap_msg = AstroCw20HookMsg::ExecuteSwapOperations {
+        //     operations,
+        //     to: None,
+        //     max_spread: None,
+        //     minimum_receive: None,
+        // };
+        // let cw_20_transfer_msg = cw20::Cw20ExecuteMsg::Send {
+        //     contract: "terra1j8hayvehh3yy02c2vtw5fdhz9f4drhtee8p5n5rguvg3nyd6m83qd2y90a".to_string(),
+        //     amount: Uint128::new(187682936458),
+        //     msg: to_json_binary(&astro_swap_msg).unwrap(),
+        // };
+        // let exec_msg: MsgExecuteContract = MsgExecuteContract {
+        //     sender:  daemon.sender().account_id(),
+        //     contract: AccountId::from_str("terra1lxx40s29qvkrcj8fsa3yzyehy7w50umdvvnls2r830rys6lu2zns63eelv").unwrap(),
+        //     msg: serde_json::to_vec(&cw_20_transfer_msg).unwrap(),
+        //     funds: vec![],
+        // };
+        //  let result = daemon.rt_handle.block_on(
+        //     async {
+        //         daemon.sender().commit_tx(vec![exec_msg], None).await
+        //     }
+        // );
     }
 }

@@ -1,5 +1,5 @@
 use andromeda_std::{
-    ado_base::InstantiateMsg as BaseInstantiateMsg,
+    ado_base::{InstantiateMsg as BaseInstantiateMsg, MigrateMsg},
     ado_contract::ADOContract,
     amp::AndrAddr,
     common::{context::ExecuteContext, denom::Asset},
@@ -8,16 +8,20 @@ use andromeda_std::{
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_json, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
-    StdResult, Uint128,
+    attr, from_json, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw20::Cw20ReceiveMsg;
 use cw_utils::one_coin;
 
 use crate::{
-    astroport::execute_swap_astroport_msg,
+    astroport::{
+        execute_swap_astroport_msg, handle_astroport_swap_reply, ASTROPORT_MSG_FORWARD_ID,
+        ASTROPORT_MSG_SWAP_ID,
+    },
     msg::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg},
+    state::{ForwardReplyState, FORWARD_REPLY_STATE},
 };
 
 const CONTRACT_NAME: &str = "crates.io:swap-and-forward";
@@ -198,11 +202,46 @@ pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, 
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
-    todo!()
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+    ADOContract::default().query(deps, env, msg)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(_deps: DepsMut, _env: Env, _msg: Reply) -> Result<Response, ContractError> {
-    todo!()
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    ADOContract::default().migrate(deps, CONTRACT_NAME, CONTRACT_VERSION)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
+    match msg.id {
+        ASTROPORT_MSG_SWAP_ID => {
+            let state: ForwardReplyState = FORWARD_REPLY_STATE.load(deps.storage)?;
+            FORWARD_REPLY_STATE.remove(deps.storage);
+
+            if msg.result.is_err() {
+                Err(ContractError::Std(StdError::generic_err(format!(
+                    "Astroport swap failed with error: {:?}",
+                    msg.result.unwrap_err()
+                ))))
+            } else {
+                match state.dex.as_str() {
+                    "astroport" => handle_astroport_swap_reply(deps, env, msg, state),
+                    _ => Err(ContractError::Std(StdError::generic_err("Unsupported dex"))),
+                }
+            }
+        }
+        ASTROPORT_MSG_FORWARD_ID => {
+            if msg.result.is_err() {
+                return Err(ContractError::Std(StdError::generic_err(format!(
+                    "Astroport msg forwarding failed with error: {:?}",
+                    msg.result.unwrap_err()
+                ))));
+            }
+            Ok(Response::default()
+                .add_attributes(vec![attr("action", "message_forwarded_success")]))
+        }
+        _ => Err(ContractError::Std(StdError::GenericErr {
+            msg: "Invalid Reply ID".to_string(),
+        })),
+    }
 }
