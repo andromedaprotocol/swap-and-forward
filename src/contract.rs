@@ -65,6 +65,15 @@ pub fn execute(
     let ctx = ExecuteContext::new(deps, info, env);
 
     match msg {
+        ExecuteMsg::AMPReceive(pkt) => {
+            ADOContract::default().execute_amp_receive(ctx, pkt, handle_execute)
+        }
+        _ => handle_execute(ctx, msg),
+    }
+}
+
+pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, ContractError> {
+    match msg {
         ExecuteMsg::Receive(msg) => handle_receive_cw20(ctx, msg),
         ExecuteMsg::SwapAndForward {
             dex,
@@ -195,10 +204,6 @@ fn swap_and_forward_cw20(
     };
 
     Ok(Response::default().add_submessage(swap_msg))
-}
-
-pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, ContractError> {
-    ADOContract::default().execute(ctx, msg)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
