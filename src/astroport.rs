@@ -139,7 +139,7 @@ pub fn generate_asset_info_from_asset(
     }
 }
 
-pub fn handle_astroport_swap(
+pub fn handle_astroport_swap_reply(
     deps: DepsMut,
     env: Env,
     msg: Reply,

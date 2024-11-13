@@ -17,7 +17,7 @@ use cw_utils::one_coin;
 
 use crate::{
     astroport::{
-        execute_swap_astroport_msg, handle_astroport_swap, ASTROPORT_MSG_FORWARD_ID,
+        execute_swap_astroport_msg, handle_astroport_swap_reply, ASTROPORT_MSG_FORWARD_ID,
         ASTROPORT_MSG_SWAP_ID,
     },
     msg::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg},
@@ -225,7 +225,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                 ))))
             } else {
                 match state.dex.as_str() {
-                    "astroport" => handle_astroport_swap(deps, env, msg, state),
+                    "astroport" => handle_astroport_swap_reply(deps, env, msg, state),
                     _ => Err(ContractError::Std(StdError::generic_err("Unsupported dex"))),
                 }
             }
