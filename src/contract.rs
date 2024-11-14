@@ -2,7 +2,7 @@ use andromeda_std::{
     ado_base::{InstantiateMsg as BaseInstantiateMsg, MigrateMsg},
     ado_contract::ADOContract,
     amp::AndrAddr,
-    common::{context::ExecuteContext, denom::Asset},
+    common::{context::ExecuteContext, denom::Asset, encode_binary},
     error::ContractError,
 };
 #[cfg(not(feature = "library"))]
@@ -17,10 +17,13 @@ use cw_utils::one_coin;
 
 use crate::{
     astroport::{
-        execute_swap_astroport_msg, handle_astroport_swap_reply, ASTROPORT_MSG_FORWARD_ID,
-        ASTROPORT_MSG_SWAP_ID,
+        execute_swap_astroport_msg, handle_astroport_swap_reply,
+        query_simulate_astro_swap_operation, ASTROPORT_MSG_FORWARD_ID, ASTROPORT_MSG_SWAP_ID,
     },
-    msg::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg},
+    msg::{
+        Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SimulateSwapOperationResponse,
+        SwapOperation,
+    },
     state::{ForwardReplyState, FORWARD_REPLY_STATE},
 };
 
@@ -207,8 +210,31 @@ fn swap_and_forward_cw20(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
-    ADOContract::default().query(deps, env, msg)
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+    match msg {
+        QueryMsg::SimulateSwapOperation {
+            dex,
+            offer_amount,
+            operation,
+        } => encode_binary(&query_simulate_swap_operation(
+            deps,
+            dex,
+            offer_amount,
+            operation,
+        )?),
+    }
+}
+
+fn query_simulate_swap_operation(
+    deps: Deps,
+    dex: String,
+    offer_amount: Uint128,
+    swap_operation: SwapOperation,
+) -> Result<SimulateSwapOperationResponse, ContractError> {
+    match dex.as_str() {
+        "astroport" => query_simulate_astro_swap_operation(deps, offer_amount, swap_operation),
+        _ => Err(ContractError::Std(StdError::generic_err("Unsupported Dex"))),
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
