@@ -95,13 +95,12 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
         self,
         offer_amount: Uint128,
         operation: SwapOperation,
-    ) {
+    ) -> SimulateSwapOperationResponse {
         let query_msg = QueryMsg::SimulateSwapOperation {
             dex: "astroport".to_string(),
             offer_amount,
             operation,
         };
-        let res: SimulateSwapOperationResponse = self.query(&query_msg).unwrap();
-        println!("========================query res: {:?}", res);
+        self.query(&query_msg).unwrap()
     }
 }
