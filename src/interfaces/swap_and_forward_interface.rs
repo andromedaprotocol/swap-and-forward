@@ -1,7 +1,9 @@
 use std::str::FromStr;
 
 use crate::contract::{execute, instantiate, migrate, query};
-use crate::msg::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{
+    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SimulateSwapOperationResponse, SwapOperation,
+};
 use andromeda_std::ado_base::MigrateMsg;
 use andromeda_std::amp::AndrAddr;
 use andromeda_std::common::denom::Asset;
@@ -83,9 +85,23 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
             msg: serde_json::to_vec(&cw_20_transfer_msg).unwrap(),
             funds: vec![],
         };
+
         daemon
             .rt_handle
             .block_on(async { daemon.sender().commit_tx(vec![exec_msg], None).await })
             .unwrap();
+    }
+    pub fn query_astrport_simulate_swap_operation(
+        self,
+        offer_amount: Uint128,
+        operation: SwapOperation,
+    ) {
+        let query_msg = QueryMsg::SimulateSwapOperation {
+            dex: "astroport".to_string(),
+            offer_amount,
+            operation,
+        };
+        let res: SimulateSwapOperationResponse = self.query(&query_msg).unwrap();
+        println!("========================query res: {:?}", res);
     }
 }

@@ -80,7 +80,7 @@ dependencies = [
 [[package]]
 name = "andromeda-app"
 version = "1.0.0"
-source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=development#89556694d2a24e008403d33cb4f9bcc480b0ce0e"
+source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=development#3401f1c05bcb04656670251c26dd5720b5f95081"
 dependencies = [
  "andromeda-std",
  "cosmwasm-schema",
@@ -89,9 +89,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "andromeda-finance"
+version = "1.0.0"
+source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=development#3401f1c05bcb04656670251c26dd5720b5f95081"
+dependencies = [
+ "andromeda-std",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-utils 1.0.3",
+ "cw721 0.18.0",
+ "cw721-base 0.18.0",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "andromeda-macros"
 version = "1.0.0"
-source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=development#89556694d2a24e008403d33cb4f9bcc480b0ce0e"
+source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=development#3401f1c05bcb04656670251c26dd5720b5f95081"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -101,12 +116,13 @@ dependencies = [
 [[package]]
 name = "andromeda-std"
 version = "1.2.4"
-source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=development#89556694d2a24e008403d33cb4f9bcc480b0ce0e"
+source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=development#3401f1c05bcb04656670251c26dd5720b5f95081"
 dependencies = [
  "andromeda-macros",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-asset",
+ "cw-orch",
  "cw-storage-plus 1.2.0",
  "cw-utils 1.0.3",
  "cw2 1.1.2",
@@ -2944,6 +2960,7 @@ name = "swap-and-forward"
 version = "0.1.7"
 dependencies = [
  "andromeda-app",
+ "andromeda-finance",
  "andromeda-std",
  "astroport",
  "cosmrs",
