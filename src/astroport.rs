@@ -11,7 +11,10 @@ use andromeda_std::{
 };
 use astroport::{
     asset::AssetInfo,
-    router::{Cw20HookMsg as AstroCw20HookMsg, ExecuteMsg as AstroExecuteMsg, SwapOperation},
+    router::{
+        Cw20HookMsg as AstroCw20HookMsg, ExecuteMsg as AstroExecuteMsg, QueryMsg as AstroQueryMsg,
+        SwapOperation as AstroSwapOperation,
+    },
 };
 use cosmwasm_std::{
     attr, coin, ensure, to_json_binary, wasm_execute, Binary, Coin, Decimal, Deps, DepsMut, Env,
@@ -19,7 +22,10 @@ use cosmwasm_std::{
 };
 use cw20::Cw20ExecuteMsg;
 
-use crate::state::{ForwardReplyState, FORWARD_REPLY_STATE};
+use crate::{
+    msg::{SimulateSwapOperationResponse, SwapOperation},
+    state::{ForwardReplyState, FORWARD_REPLY_STATE},
+};
 
 pub const ASTRO_ROUTER_ADDRESS: &str =
     "terra1j8hayvehh3yy02c2vtw5fdhz9f4drhtee8p5n5rguvg3nyd6m83qd2y90a";
@@ -49,7 +55,7 @@ pub(crate) fn execute_swap_astroport_msg(
     };
 
     // Prepare swap operations
-    let operations = vec![SwapOperation::AstroSwap {
+    let operations = vec![AstroSwapOperation::AstroSwap {
         offer_asset_info: generate_asset_info_from_asset(&deps.as_ref(), from_asset.clone())?,
         ask_asset_info: generate_asset_info_from_asset(&deps.as_ref(), to_asset.clone())?,
     }];
@@ -250,4 +256,22 @@ pub(crate) fn parse_astroport_swap_reply(
             err
         )))),
     }
+}
+
+pub fn query_simulate_astro_swap_operation(
+    deps: Deps,
+    offer_amount: Uint128,
+    operation: SwapOperation,
+) -> Result<SimulateSwapOperationResponse, ContractError> {
+    let query_msg = AstroQueryMsg::SimulateSwapOperations {
+        offer_amount,
+        operations: vec![AstroSwapOperation::AstroSwap {
+            offer_asset_info: generate_asset_info_from_asset(&deps, operation.offer_asset_info)?,
+            ask_asset_info: generate_asset_info_from_asset(&deps, operation.ask_asset_info)?,
+        }],
+    };
+
+    deps.querier
+        .query_wasm_smart(ASTRO_ROUTER_ADDRESS, &query_msg)
+        .map_err(ContractError::Std)
 }
