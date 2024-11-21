@@ -5,7 +5,9 @@ use cw20::Cw20ReceiveMsg;
 
 #[andr_instantiate]
 #[cw_serde]
-pub struct InstantiateMsg {}
+pub struct InstantiateMsg {
+    pub swap_router: Option<AndrAddr>,
+}
 
 #[andr_exec]
 #[cw_serde]

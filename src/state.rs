@@ -2,7 +2,7 @@ use andromeda_std::{
     amp::{messages::AMPCtx, AndrAddr},
     common::denom::Asset,
 };
-use cosmwasm_std::Binary;
+use cosmwasm_std::{Addr, Binary};
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -26,4 +26,5 @@ pub struct ForwardReplyState {
 }
 
 pub const FORWARD_REPLY_STATE: Item<ForwardReplyState> = Item::new("forward_reply_state");
-// MNEMONIC
+
+pub const SWAP_ROUTER: Item<Addr> = Item::new("swap_router");

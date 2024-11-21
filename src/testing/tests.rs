@@ -13,6 +13,7 @@ fn init(deps: DepsMut) -> Response {
     let msg = InstantiateMsg {
         owner: Some(OWNER.to_owned()),
         kernel_address: MOCK_KERNEL_CONTRACT.to_string(),
+        swap_router: None,
     };
 
     let info = mock_info(OWNER, &[]);
@@ -410,6 +411,7 @@ mod test {
             kernel_address: "terra1g0vzxc6a0layhxdwc24kwwam4v93pjmam5a77wtvfhzpdltp82estk3kpc"
                 .to_string(),
             owner: None,
+            swap_router: None,
         };
         let swap_and_forward_component = AppComponent::new(
             "swap-and-forward",
@@ -512,6 +514,7 @@ mod test {
             kernel_address: "terra1g0vzxc6a0layhxdwc24kwwam4v93pjmam5a77wtvfhzpdltp82estk3kpc"
                 .to_string(),
             owner: None,
+            swap_router: None,
         };
         let swap_and_forward_component = AppComponent::new(
             "swap-and-forward",
@@ -653,6 +656,7 @@ mod test {
             kernel_address: "terra1g0vzxc6a0layhxdwc24kwwam4v93pjmam5a77wtvfhzpdltp82estk3kpc"
                 .to_string(),
             owner: None,
+            swap_router: None,
         };
         let swap_and_forward_component = AppComponent::new(
             "swap-and-forward",

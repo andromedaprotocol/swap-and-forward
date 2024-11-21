@@ -24,7 +24,7 @@ use crate::{
         Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SimulateSwapOperationResponse,
         SwapOperation,
     },
-    state::{ForwardReplyState, FORWARD_REPLY_STATE},
+    state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER},
 };
 
 const CONTRACT_NAME: &str = "crates.io:swap-and-forward";
@@ -38,6 +38,13 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    let swap_router = msg
+        .swap_router
+        .unwrap_or(AndrAddr::from_string("/lib/astroport/router"))
+        .get_raw_address(&deps.as_ref())?;
+
+    SWAP_ROUTER.save(deps.storage, &swap_router)?;
 
     let inst_resp = ADOContract::default().instantiate(
         deps.storage,
