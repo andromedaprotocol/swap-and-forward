@@ -2,7 +2,7 @@ use andromeda_std::{
     amp::{messages::AMPCtx, AndrAddr},
     common::denom::Asset,
 };
-use cosmwasm_std::{Addr, Binary};
+use cosmwasm_std::Binary;
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

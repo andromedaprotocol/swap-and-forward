@@ -83,7 +83,7 @@ pub(crate) fn execute_swap_astroport_msg(
         },
     )?;
 
-    let swap_router = SWAP_ROUTER.load(deps.storage)?;
+    let swap_router = SWAP_ROUTER.load(deps.storage)?.get_raw_address(&deps.as_ref())?;
     // Build swap msg
     let msg = match from_asset {
         Asset::NativeToken(_) => {
@@ -269,7 +269,7 @@ pub fn query_simulate_astro_swap_operation(
         }],
     };
 
-    let swap_router = SWAP_ROUTER.load(deps.storage)?;
+    let swap_router = SWAP_ROUTER.load(deps.storage)?.get_raw_address(&deps)?;
 
     deps.querier
         .query_wasm_smart(swap_router, &query_msg)
