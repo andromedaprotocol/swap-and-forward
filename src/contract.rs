@@ -38,14 +38,6 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
-    let swap_router = msg
-        .swap_router
-        .unwrap_or(AndrAddr::from_string("/lib/astroport/router"))
-        .get_raw_address(&deps.as_ref())?;
-
-    SWAP_ROUTER.save(deps.storage, &swap_router)?;
-
     let inst_resp = ADOContract::default().instantiate(
         deps.storage,
         env,
@@ -59,6 +51,13 @@ pub fn instantiate(
             owner: msg.owner,
         },
     )?;
+
+
+    let swap_router = msg
+        .swap_router
+        .unwrap_or(AndrAddr::from_string("/lib/astroport/router"));
+    swap_router.get_raw_address(&deps.as_ref())?;
+    SWAP_ROUTER.save(deps.storage, &swap_router)?;
 
     Ok(inst_resp
         .add_attribute("method", "instantiate")
@@ -230,13 +229,8 @@ fn execute_update_swap_router(
     );
     let ExecuteContext { deps, .. } = ctx;
 
-    let swap_router = swap_router.get_raw_address(&deps.as_ref())?;
+    swap_router.get_raw_address(&deps.as_ref())?;
     let previous_swap_router = SWAP_ROUTER.load(deps.storage)?;
-
-    ensure!(
-        swap_router != previous_swap_router,
-        ContractError::InvalidAddress {}
-    );
 
     SWAP_ROUTER.save(deps.storage, &swap_router)?;
     Ok(Response::new().add_attributes(vec![

@@ -1,6 +1,6 @@
 [package]
 name = "swap-and-forward"
-version = "0.1.9"
+version = "0.1.9-beta-1"
 authors = ["cowboy0015 <web3pirate@outlook.com>"]
 edition = "2021"
 
