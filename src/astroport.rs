@@ -24,11 +24,8 @@ use cw20::Cw20ExecuteMsg;
 
 use crate::{
     msg::{SimulateSwapOperationResponse, SwapOperation},
-    state::{ForwardReplyState, FORWARD_REPLY_STATE},
+    state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER},
 };
-
-pub const ASTRO_ROUTER_ADDRESS: &str =
-    "terra1j8hayvehh3yy02c2vtw5fdhz9f4drhtee8p5n5rguvg3nyd6m83qd2y90a";
 
 pub const ASTROPORT_MSG_SWAP_ID: u64 = 1;
 pub const ASTROPORT_MSG_FORWARD_ID: u64 = 2;
@@ -86,6 +83,7 @@ pub(crate) fn execute_swap_astroport_msg(
         },
     )?;
 
+    let swap_router = SWAP_ROUTER.load(deps.storage)?;
     // Build swap msg
     let msg = match from_asset {
         Asset::NativeToken(_) => {
@@ -96,7 +94,7 @@ pub(crate) fn execute_swap_astroport_msg(
                 minimum_receive,
             };
             WasmMsg::Execute {
-                contract_addr: ASTRO_ROUTER_ADDRESS.to_string(),
+                contract_addr: swap_router.to_string(),
                 msg: to_json_binary(&astro_swap_msg)?,
                 funds: vec![coin(from_amount.u128(), from_denom)],
             }
@@ -110,7 +108,7 @@ pub(crate) fn execute_swap_astroport_msg(
             };
 
             let send_msg = Cw20ExecuteMsg::Send {
-                contract: ASTRO_ROUTER_ADDRESS.to_string(),
+                contract: swap_router.to_string(),
                 amount: from_amount,
                 msg: to_json_binary(&astro_swap_hook_msg)?,
             };
@@ -271,7 +269,9 @@ pub fn query_simulate_astro_swap_operation(
         }],
     };
 
+    let swap_router = SWAP_ROUTER.load(deps.storage)?;
+
     deps.querier
-        .query_wasm_smart(ASTRO_ROUTER_ADDRESS, &query_msg)
+        .query_wasm_smart(swap_router, &query_msg)
         .map_err(ContractError::Std)
 }

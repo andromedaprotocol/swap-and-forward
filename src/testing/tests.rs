@@ -45,7 +45,7 @@ mod test {
     use cw_orch::prelude::*;
 
     use crate::{
-        astroport::{generate_asset_info_from_asset, ASTROPORT_MSG_SWAP_ID, ASTRO_ROUTER_ADDRESS},
+        astroport::{generate_asset_info_from_asset, ASTROPORT_MSG_SWAP_ID},
         contract::execute,
         interfaces::{
             app_interface::AppContract, swap_and_forward_interface::SwapAndForwardContract,
@@ -92,8 +92,12 @@ mod test {
             max_spread,
             minimum_receive,
         };
+
+        let router_address = AndrAddr::from_string("/lib/astroport/router")
+            .get_raw_address(&deps.as_ref())
+            .unwrap();
         let msg = WasmMsg::Execute {
-            contract_addr: ASTRO_ROUTER_ADDRESS.to_string(),
+            contract_addr: router_address.to_string(),
             msg: to_json_binary(&msg).unwrap(),
             funds: vec![coin(from_amount.u128(), from_denom)],
         };
@@ -129,8 +133,12 @@ mod test {
             max_spread,
             minimum_receive,
         };
+
+        let router_address = AndrAddr::from_string("/lib/astroport/router")
+            .get_raw_address(&deps.as_ref())
+            .unwrap();
         let send_msg = Cw20ExecuteMsg::Send {
-            contract: ASTRO_ROUTER_ADDRESS.to_string(),
+            contract: router_address.to_string(),
             amount: from_amount,
             msg: to_json_binary(&astro_swap_hook_msg).unwrap(),
         };
