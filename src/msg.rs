@@ -29,6 +29,8 @@ pub enum ExecuteMsg {
         /// The minimum amount of tokens to receive from swap operation
         minimum_receive: Option<Uint128>,
     },
+    /// Update swap router
+    UpdateSwapRouter { swap_router: AndrAddr },
 }
 
 #[cw_serde]
