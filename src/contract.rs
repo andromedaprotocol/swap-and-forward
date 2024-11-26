@@ -52,7 +52,6 @@ pub fn instantiate(
         },
     )?;
 
-
     let swap_router = msg
         .swap_router
         .unwrap_or(AndrAddr::from_string("/lib/astroport/router"));
@@ -91,7 +90,7 @@ pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, 
             forward_msg,
             max_spread,
             minimum_receive,
-            ..
+            operations,
         } => execute_swap_and_forward(
             ctx,
             dex,
@@ -100,6 +99,7 @@ pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, 
             forward_msg,
             max_spread,
             minimum_receive,
+            operations,
         ),
         ExecuteMsg::UpdateSwapRouter { swap_router } => {
             execute_update_swap_router(ctx, swap_router)
@@ -127,7 +127,7 @@ fn handle_receive_cw20(
             forward_msg,
             max_spread,
             minimum_receive,
-            ..
+            operations,
         } => {
             let forward_addr = match forward_addr {
                 None => AndrAddr::from_string(&sender),
@@ -144,11 +144,13 @@ fn handle_receive_cw20(
                 forward_msg,
                 max_spread,
                 minimum_receive,
+                operations,
             )
         }
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn execute_swap_and_forward(
     ctx: ExecuteContext,
     dex: String,
@@ -157,6 +159,7 @@ fn execute_swap_and_forward(
     forward_msg: Option<Binary>,
     max_spread: Option<Decimal>,
     minimum_receive: Option<Uint128>,
+    operations: Option<Vec<SwapOperation>>,
 ) -> Result<Response, ContractError> {
     let fund = one_coin(&ctx.info).map_err(|_| ContractError::InvalidAsset {
         asset: "Invalid or missing coin".to_string(),
@@ -180,6 +183,7 @@ fn execute_swap_and_forward(
             forward_msg,
             max_spread,
             minimum_receive,
+            operations,
         )?,
         _ => return Err(ContractError::Std(StdError::generic_err("Unsupported Dex"))),
     };
@@ -199,6 +203,7 @@ fn swap_and_forward_cw20(
     forward_msg: Option<Binary>,
     max_spread: Option<Decimal>,
     minimum_receive: Option<Uint128>,
+    operations: Option<Vec<SwapOperation>>,
 ) -> Result<Response, ContractError> {
     let swap_msg = match dex.as_str() {
         "astroport" => execute_swap_astroport_msg(
@@ -211,6 +216,7 @@ fn swap_and_forward_cw20(
             forward_msg,
             max_spread,
             minimum_receive,
+            operations,
         )?,
         _ => return Err(ContractError::Std(StdError::generic_err("Unsupported Dex"))),
     };
@@ -245,12 +251,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         QueryMsg::SimulateSwapOperation {
             dex,
             offer_amount,
-            operation,
+            operations,
         } => encode_binary(&query_simulate_swap_operation(
             deps,
             dex,
             offer_amount,
-            operation,
+            operations,
         )?),
     }
 }
@@ -259,7 +265,7 @@ fn query_simulate_swap_operation(
     deps: Deps,
     dex: String,
     offer_amount: Uint128,
-    swap_operation: SwapOperation,
+    swap_operation: Vec<SwapOperation>,
 ) -> Result<SimulateSwapOperationResponse, ContractError> {
     match dex.as_str() {
         "astroport" => query_simulate_astro_swap_operation(deps, offer_amount, swap_operation),

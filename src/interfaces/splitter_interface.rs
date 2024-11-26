@@ -16,7 +16,7 @@ impl SplitterContract<DaemonBase<Wallet>> {
         let init_msg = InstantiateMsg {
             recipients,
             lock_time,
-            kernel_address: "terra1g0vzxc6a0layhxdwc24kwwam4v93pjmam5a77wtvfhzpdltp82estk3kpc"
+            kernel_address: "neutron1zlwfu3wurn98zv3qe4cln0p4crwvfvjkn703vhhcajh6h3v00zzsdadsd8"
                 .to_string(),
             owner,
         };

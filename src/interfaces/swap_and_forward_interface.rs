@@ -1,9 +1,7 @@
 use std::str::FromStr;
 
 use crate::contract::{execute, instantiate, migrate, query};
-use crate::msg::{
-    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SimulateSwapOperationResponse, SwapOperation,
-};
+use crate::msg::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SwapOperation};
 use andromeda_std::ado_base::MigrateMsg;
 use andromeda_std::amp::AndrAddr;
 use andromeda_std::common::denom::Asset;
@@ -30,30 +28,6 @@ impl<Chain> Uploadable for SwapAndForwardContract<Chain> {
 
 impl SwapAndForwardContract<DaemonBase<Wallet>> {
     #[allow(clippy::too_many_arguments)]
-    pub fn execute_swap_from_native(
-        self,
-        dex: String,
-        to_asset: Asset,
-        forward_addr: Option<AndrAddr>,
-        forward_msg: Option<Binary>,
-        max_spread: Option<Decimal>,
-        minimum_receive: Option<Uint128>,
-        coins: &[Coin],
-    ) {
-        self.execute(
-            &ExecuteMsg::SwapAndForward {
-                dex,
-                to_asset,
-                forward_addr,
-                forward_msg,
-                max_spread,
-                minimum_receive,
-            },
-            Some(coins),
-        )
-        .unwrap();
-    }
-    #[allow(clippy::too_many_arguments)]
     pub fn execute_swap_from_cw20(
         self,
         daemon: &Daemon,
@@ -65,6 +39,7 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
         forward_msg: Option<Binary>,
         max_spread: Option<Decimal>,
         minimum_receive: Option<Uint128>,
+        operations: Option<Vec<SwapOperation>>,
     ) {
         let hook_msg = Cw20HookMsg::SwapAndForward {
             dex,
@@ -73,6 +48,7 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
             forward_msg,
             max_spread,
             minimum_receive,
+            operations,
         };
         let cw_20_transfer_msg = cw20::Cw20ExecuteMsg::Send {
             contract: self.addr_str().unwrap(),
@@ -90,17 +66,5 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
             .rt_handle
             .block_on(async { daemon.sender().commit_tx(vec![exec_msg], None).await })
             .unwrap();
-    }
-    pub fn query_astrport_simulate_swap_operation(
-        self,
-        offer_amount: Uint128,
-        operation: SwapOperation,
-    ) -> SimulateSwapOperationResponse {
-        let query_msg = QueryMsg::SimulateSwapOperation {
-            dex: "astroport".to_string(),
-            offer_amount,
-            operation,
-        };
-        self.query(&query_msg).unwrap()
     }
 }
