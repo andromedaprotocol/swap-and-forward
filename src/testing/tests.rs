@@ -19,10 +19,7 @@ mod test {
         msg::{ExecuteMsgFns, InstantiateMsg},
     };
 
-    use cw_orch_daemon::{
-        networks::PION_1,
-        Daemon, TxSender,
-    };
+    use cw_orch_daemon::{networks::PION_1, Daemon, TxSender};
     use dotenv::dotenv;
 
     #[allow(dead_code)]
@@ -103,10 +100,7 @@ mod test {
         dotenv().ok();
         env_logger::init();
         let mnemonic = std::env::var("MNEMONIC").expect("MNEMONIC must be set.");
-        let daemon = Daemon::builder(PION_1)
-            .mnemonic(mnemonic)
-            .build()
-            .unwrap();
+        let daemon = Daemon::builder(PION_1).mnemonic(mnemonic).build().unwrap();
         let denom = PION_1.gas_denom;
 
         // upload ado if not uploaded
@@ -122,7 +116,7 @@ mod test {
         // );
         // println!("======================app_address: {:?}", app_address);
         app_contract.set_address(&Addr::unchecked(
-            // app_address, 
+            // app_address,
             "neutron1x5mj0565mqrq5h7wsm66jlsscu0svlx2yj9ydkrwer5pmysj6v4shyu8mk",
         ));
 
@@ -166,10 +160,7 @@ mod test {
         env_logger::init();
         let mnemonic = std::env::var("MNEMONIC").expect("MNEMONIC must be set.");
 
-        let daemon = Daemon::builder(PION_1)
-            .mnemonic(mnemonic)
-            .build()
-            .unwrap();
+        let daemon = Daemon::builder(PION_1).mnemonic(mnemonic).build().unwrap();
         let denom = PION_1.gas_denom;
 
         // upload ado if not uploaded
@@ -184,7 +175,7 @@ mod test {
         //     splitter_component_name,
         // );
         app_contract.set_address(&Addr::unchecked(
-            // app_address, 
+            // app_address,
             "neutron1x5mj0565mqrq5h7wsm66jlsscu0svlx2yj9ydkrwer5pmysj6v4shyu8mk",
         ));
 
@@ -231,10 +222,7 @@ mod test {
         env_logger::init();
         let mnemonic = std::env::var("MNEMONIC").expect("MNEMONIC must be set.");
 
-        let daemon = Daemon::builder(PION_1)
-            .mnemonic(mnemonic)
-            .build()
-            .unwrap();
+        let daemon = Daemon::builder(PION_1).mnemonic(mnemonic).build().unwrap();
 
         // upload ado if not uploaded
         // upload_ado(&daemon);
