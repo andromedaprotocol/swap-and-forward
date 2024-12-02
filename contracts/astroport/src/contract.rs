@@ -20,11 +20,11 @@ use crate::{
         execute_swap_astroport_msg, handle_astroport_swap_reply,
         query_simulate_astro_swap_operation, ASTROPORT_MSG_FORWARD_ID, ASTROPORT_MSG_SWAP_ID,
     },
-    msg::{
-        Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SimulateSwapOperationResponse,
-        SwapOperation,
-    },
     state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER},
+};
+
+use andromeda_swap_and_forward::astroport::{
+    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SimulateSwapOperationResponse, SwapOperation,
 };
 
 const CONTRACT_NAME: &str = "crates.io:swap-and-forward";

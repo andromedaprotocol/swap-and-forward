@@ -12,12 +12,10 @@ mod test {
     use cosmwasm_std::{coin, to_json_binary, Addr, Decimal, Uint128};
     use cw_orch::prelude::*;
 
-    use crate::{
-        interfaces::{
-            app_interface::AppContract, swap_and_forward_interface::SwapAndForwardContract,
-        },
-        msg::{ExecuteMsgFns, InstantiateMsg},
+    use crate::interfaces::{
+        app_interface::AppContract, swap_and_forward_interface::SwapAndForwardContract,
     };
+    use andromeda_swap_and_forward::astroport::{ExecuteMsgFns, InstantiateMsg};
 
     use cw_orch_daemon::{networks::PION_1, Daemon, TxSender};
     use dotenv::dotenv;

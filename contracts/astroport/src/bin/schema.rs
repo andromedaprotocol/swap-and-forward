@@ -1,6 +1,6 @@
 use cosmwasm_schema::write_api;
 
-use swap_and_forward::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use andromeda_swap_and_forward::astroport::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
     write_api! {
