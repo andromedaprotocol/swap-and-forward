@@ -1,6 +1,6 @@
 [package]
 name = "swap-and-forward"
-version = "0.1.7"
+version = "0.2.0"
 authors = ["cowboy0015 <web3pirate@outlook.com>"]
 edition = "2021"
 
@@ -53,8 +53,10 @@ astroport = { git = "https://github.com/astroport-fi/astroport-core" }
 andromeda-app = {git = "https://github.com/andromedaprotocol/andromeda-core", package = "andromeda-app", branch = "development"}
 andromeda-finance = {git = "https://github.com/andromedaprotocol/andromeda-core", package = "andromeda-finance", branch = "development"}
 dotenv = "0.15.0"
-cw-orch = "0.24.1"
-cw-orch-daemon = "0.24.2"
 env_logger = "0.11.5"
 cosmrs = { version = "0.15.0", features = ["cosmwasm"]}
 serde_json = "1.0.132"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+cw-orch = "0.24.1"
+cw-orch-daemon = "0.24.2"

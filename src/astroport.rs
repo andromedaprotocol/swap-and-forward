@@ -24,11 +24,8 @@ use cw20::Cw20ExecuteMsg;
 
 use crate::{
     msg::{SimulateSwapOperationResponse, SwapOperation},
-    state::{ForwardReplyState, FORWARD_REPLY_STATE},
+    state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER},
 };
-
-pub const ASTRO_ROUTER_ADDRESS: &str =
-    "terra1j8hayvehh3yy02c2vtw5fdhz9f4drhtee8p5n5rguvg3nyd6m83qd2y90a";
 
 pub const ASTROPORT_MSG_SWAP_ID: u64 = 1;
 pub const ASTROPORT_MSG_FORWARD_ID: u64 = 2;
@@ -44,6 +41,7 @@ pub(crate) fn execute_swap_astroport_msg(
     forward_msg: Option<Binary>,
     max_spread: Option<Decimal>,
     minimum_receive: Option<Uint128>,
+    operations: Option<Vec<SwapOperation>>,
 ) -> Result<SubMsg, ContractError> {
     let ExecuteContext { deps, .. } = ctx;
 
@@ -55,11 +53,26 @@ pub(crate) fn execute_swap_astroport_msg(
     };
 
     // Prepare swap operations
-    let operations = vec![AstroSwapOperation::AstroSwap {
-        offer_asset_info: generate_asset_info_from_asset(&deps.as_ref(), from_asset.clone())?,
-        ask_asset_info: generate_asset_info_from_asset(&deps.as_ref(), to_asset.clone())?,
-    }];
-
+    let operations: Vec<AstroSwapOperation> = operations
+        .unwrap_or(vec![SwapOperation {
+            offer_asset_info: from_asset.clone(),
+            ask_asset_info: to_asset.clone(),
+        }])
+        .iter()
+        .map(|oper| {
+            let astro_operation = AstroSwapOperation::AstroSwap {
+                offer_asset_info: generate_asset_info_from_asset(
+                    &deps.as_ref(),
+                    oper.offer_asset_info.clone(),
+                )?,
+                ask_asset_info: generate_asset_info_from_asset(
+                    &deps.as_ref(),
+                    oper.ask_asset_info.clone(),
+                )?,
+            };
+            Ok(astro_operation)
+        })
+        .collect::<Result<Vec<AstroSwapOperation>, ContractError>>()?;
     ensure!(
         FORWARD_REPLY_STATE
             .may_load(deps.as_ref().storage)?
@@ -86,6 +99,9 @@ pub(crate) fn execute_swap_astroport_msg(
         },
     )?;
 
+    let swap_router = SWAP_ROUTER
+        .load(deps.storage)?
+        .get_raw_address(&deps.as_ref())?;
     // Build swap msg
     let msg = match from_asset {
         Asset::NativeToken(_) => {
@@ -96,7 +112,7 @@ pub(crate) fn execute_swap_astroport_msg(
                 minimum_receive,
             };
             WasmMsg::Execute {
-                contract_addr: ASTRO_ROUTER_ADDRESS.to_string(),
+                contract_addr: swap_router.to_string(),
                 msg: to_json_binary(&astro_swap_msg)?,
                 funds: vec![coin(from_amount.u128(), from_denom)],
             }
@@ -110,7 +126,7 @@ pub(crate) fn execute_swap_astroport_msg(
             };
 
             let send_msg = Cw20ExecuteMsg::Send {
-                contract: ASTRO_ROUTER_ADDRESS.to_string(),
+                contract: swap_router.to_string(),
                 amount: from_amount,
                 msg: to_json_binary(&astro_swap_hook_msg)?,
             };
@@ -261,17 +277,29 @@ pub(crate) fn parse_astroport_swap_reply(
 pub fn query_simulate_astro_swap_operation(
     deps: Deps,
     offer_amount: Uint128,
-    operation: SwapOperation,
+    operations: Vec<SwapOperation>,
 ) -> Result<SimulateSwapOperationResponse, ContractError> {
+    let operations: Vec<AstroSwapOperation> = operations
+        .iter()
+        .map(|oper| {
+            let astro_operation = AstroSwapOperation::AstroSwap {
+                offer_asset_info: generate_asset_info_from_asset(
+                    &deps,
+                    oper.offer_asset_info.clone(),
+                )?,
+                ask_asset_info: generate_asset_info_from_asset(&deps, oper.ask_asset_info.clone())?,
+            };
+            Ok(astro_operation)
+        })
+        .collect::<Result<Vec<AstroSwapOperation>, ContractError>>()?;
     let query_msg = AstroQueryMsg::SimulateSwapOperations {
         offer_amount,
-        operations: vec![AstroSwapOperation::AstroSwap {
-            offer_asset_info: generate_asset_info_from_asset(&deps, operation.offer_asset_info)?,
-            ask_asset_info: generate_asset_info_from_asset(&deps, operation.ask_asset_info)?,
-        }],
+        operations,
     };
 
+    let swap_router = SWAP_ROUTER.load(deps.storage)?.get_raw_address(&deps)?;
+
     deps.querier
-        .query_wasm_smart(ASTRO_ROUTER_ADDRESS, &query_msg)
+        .query_wasm_smart(swap_router, &query_msg)
         .map_err(ContractError::Std)
 }

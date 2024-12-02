@@ -5,14 +5,18 @@ use cw20::Cw20ReceiveMsg;
 
 #[andr_instantiate]
 #[cw_serde]
-pub struct InstantiateMsg {}
+pub struct InstantiateMsg {
+    pub swap_router: Option<AndrAddr>,
+}
 
 #[andr_exec]
 #[cw_serde]
+#[cfg_attr(not(target_arch = "wasm32"), derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Swap cw20 asset into another asset using dex
     Receive(Cw20ReceiveMsg),
     /// Swap native token into another asset using dex
+    #[cfg_attr(not(target_arch = "wasm32"), cw_orch(payable))]
     SwapAndForward {
         /// The name of the dex that is to be used for the swap operation
         dex: String,
@@ -26,7 +30,11 @@ pub enum ExecuteMsg {
         max_spread: Option<Decimal>,
         /// The minimum amount of tokens to receive from swap operation
         minimum_receive: Option<Uint128>,
+        /// The swap operations that is supposed to be taken
+        operations: Option<Vec<SwapOperation>>,
     },
+    /// Update swap router
+    UpdateSwapRouter { swap_router: AndrAddr },
 }
 
 #[cw_serde]
@@ -44,9 +52,12 @@ pub enum Cw20HookMsg {
         max_spread: Option<Decimal>,
         /// The minimum amount of tokens to receive from swap operation
         minimum_receive: Option<Uint128>,
+        /// The swap operations that is supposed to be taken
+        operations: Option<Vec<SwapOperation>>,
     },
 }
 #[cw_serde]
+#[cfg_attr(not(target_arch = "wasm32"), derive(cw_orch::QueryFns))]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     #[returns(SimulateSwapOperationResponse)]
@@ -56,7 +67,7 @@ pub enum QueryMsg {
         /// The amount of tokens to swap
         offer_amount: Uint128,
         /// The swap operation to perform
-        operation: SwapOperation,
+        operations: Vec<SwapOperation>,
     },
 }
 

@@ -8,8 +8,8 @@ use andromeda_std::{
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, from_json, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
-    Uint128,
+    attr, ensure, from_json, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    StdError, Uint128,
 };
 use cw2::set_contract_version;
 use cw20::Cw20ReceiveMsg;
@@ -24,7 +24,7 @@ use crate::{
         Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SimulateSwapOperationResponse,
         SwapOperation,
     },
-    state::{ForwardReplyState, FORWARD_REPLY_STATE},
+    state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER},
 };
 
 const CONTRACT_NAME: &str = "crates.io:swap-and-forward";
@@ -38,7 +38,6 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
     let inst_resp = ADOContract::default().instantiate(
         deps.storage,
         env,
@@ -52,6 +51,12 @@ pub fn instantiate(
             owner: msg.owner,
         },
     )?;
+
+    let swap_router = msg
+        .swap_router
+        .unwrap_or(AndrAddr::from_string("/lib/astroport/router"));
+    swap_router.get_raw_address(&deps.as_ref())?;
+    SWAP_ROUTER.save(deps.storage, &swap_router)?;
 
     Ok(inst_resp
         .add_attribute("method", "instantiate")
@@ -85,7 +90,7 @@ pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, 
             forward_msg,
             max_spread,
             minimum_receive,
-            ..
+            operations,
         } => execute_swap_and_forward(
             ctx,
             dex,
@@ -94,7 +99,11 @@ pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, 
             forward_msg,
             max_spread,
             minimum_receive,
+            operations,
         ),
+        ExecuteMsg::UpdateSwapRouter { swap_router } => {
+            execute_update_swap_router(ctx, swap_router)
+        }
         _ => ADOContract::default().execute(ctx, msg),
     }
 }
@@ -118,7 +127,7 @@ fn handle_receive_cw20(
             forward_msg,
             max_spread,
             minimum_receive,
-            ..
+            operations,
         } => {
             let forward_addr = match forward_addr {
                 None => AndrAddr::from_string(&sender),
@@ -135,11 +144,13 @@ fn handle_receive_cw20(
                 forward_msg,
                 max_spread,
                 minimum_receive,
+                operations,
             )
         }
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn execute_swap_and_forward(
     ctx: ExecuteContext,
     dex: String,
@@ -148,6 +159,7 @@ fn execute_swap_and_forward(
     forward_msg: Option<Binary>,
     max_spread: Option<Decimal>,
     minimum_receive: Option<Uint128>,
+    operations: Option<Vec<SwapOperation>>,
 ) -> Result<Response, ContractError> {
     let fund = one_coin(&ctx.info).map_err(|_| ContractError::InvalidAsset {
         asset: "Invalid or missing coin".to_string(),
@@ -171,6 +183,7 @@ fn execute_swap_and_forward(
             forward_msg,
             max_spread,
             minimum_receive,
+            operations,
         )?,
         _ => return Err(ContractError::Std(StdError::generic_err("Unsupported Dex"))),
     };
@@ -190,6 +203,7 @@ fn swap_and_forward_cw20(
     forward_msg: Option<Binary>,
     max_spread: Option<Decimal>,
     minimum_receive: Option<Uint128>,
+    operations: Option<Vec<SwapOperation>>,
 ) -> Result<Response, ContractError> {
     let swap_msg = match dex.as_str() {
         "astroport" => execute_swap_astroport_msg(
@@ -202,6 +216,7 @@ fn swap_and_forward_cw20(
             forward_msg,
             max_spread,
             minimum_receive,
+            operations,
         )?,
         _ => return Err(ContractError::Std(StdError::generic_err("Unsupported Dex"))),
     };
@@ -209,18 +224,39 @@ fn swap_and_forward_cw20(
     Ok(Response::default().add_submessage(swap_msg))
 }
 
+fn execute_update_swap_router(
+    ctx: ExecuteContext,
+    swap_router: AndrAddr,
+) -> Result<Response, ContractError> {
+    let sender = ctx.info.sender;
+    ensure!(
+        ADOContract::default().is_owner_or_operator(ctx.deps.storage, sender.as_ref())?,
+        ContractError::Unauthorized {}
+    );
+    let ExecuteContext { deps, .. } = ctx;
+
+    swap_router.get_raw_address(&deps.as_ref())?;
+    let previous_swap_router = SWAP_ROUTER.load(deps.storage)?;
+
+    SWAP_ROUTER.save(deps.storage, &swap_router)?;
+    Ok(Response::new().add_attributes(vec![
+        attr("action", "update-swap-router"),
+        attr("previous_swap_router", previous_swap_router),
+        attr("swap_router", swap_router),
+    ]))
+}
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::SimulateSwapOperation {
             dex,
             offer_amount,
-            operation,
+            operations,
         } => encode_binary(&query_simulate_swap_operation(
             deps,
             dex,
             offer_amount,
-            operation,
+            operations,
         )?),
     }
 }
@@ -229,7 +265,7 @@ fn query_simulate_swap_operation(
     deps: Deps,
     dex: String,
     offer_amount: Uint128,
-    swap_operation: SwapOperation,
+    swap_operation: Vec<SwapOperation>,
 ) -> Result<SimulateSwapOperationResponse, ContractError> {
     match dex.as_str() {
         "astroport" => query_simulate_astro_swap_operation(deps, offer_amount, swap_operation),

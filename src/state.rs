@@ -26,4 +26,5 @@ pub struct ForwardReplyState {
 }
 
 pub const FORWARD_REPLY_STATE: Item<ForwardReplyState> = Item::new("forward_reply_state");
-// MNEMONIC
+
+pub const SWAP_ROUTER: Item<AndrAddr> = Item::new("swap_router");
