@@ -38,7 +38,13 @@ pub enum ExecuteMsg {
 #[cw_serde]
 #[cfg_attr(not(target_arch = "wasm32"), derive(cw_orch::QueryFns))]
 #[derive(QueryResponses)]
-pub enum QueryMsg {}
+pub enum QueryMsg {
+    #[returns(GetRouteResponse)]
+    GetRoute {
+        from_denom: String,
+        to_denom: String,
+    },
+}
 
 #[cw_serde]
 pub enum Slippage {
@@ -77,4 +83,9 @@ impl From<SwapRoute> for SwapAmountInRoute {
             token_out_denom: val.token_out_denom,
         }
     }
+}
+
+#[cw_serde]
+pub struct GetRouteResponse {
+    pub pool_route: Vec<SwapRoute>,
 }
