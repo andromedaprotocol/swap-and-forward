@@ -8,9 +8,6 @@ license = "MIT"
 [features]
 backtraces = ["cosmwasm-std/backtraces"]
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 cosmwasm-std = { workspace = true, features = ["staking"] }
 cosmwasm-schema = { workspace = true }
