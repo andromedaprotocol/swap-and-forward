@@ -10,7 +10,8 @@ use andromeda_std::{
     error::ContractError,
 };
 use cosmwasm_std::{
-    attr, coin, ensure, to_json_binary, Binary, Coin, Deps, DepsMut, Env, Reply, Response, StdError, SubMsg, SubMsgResult, Uint128, WasmMsg
+    attr, coin, ensure, to_json_binary, Binary, Coin, Deps, DepsMut, Env, Reply, Response,
+    StdError, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use swaprouter::msg::{ExecuteMsg as OsmosisExecuteMsg, QueryMsg as OsmosisQueryMsg};
 
@@ -168,19 +169,35 @@ pub(crate) fn parse_osmosis_swap_reply(msg: Reply) -> Result<Uint128, ContractEr
     }
 }
 
-
 pub fn query_get_route(
     deps: Deps,
     from_denom: String,
     to_denom: String,
 ) -> Result<GetRouteResponse, ContractError> {
     let query_msg = OsmosisQueryMsg::GetRoute {
-        input_denom: from_denom, output_denom: to_denom
+        input_denom: from_denom,
+        output_denom: to_denom,
     };
 
     let swap_router = SWAP_ROUTER.load(deps.storage)?.get_raw_address(&deps)?;
 
-    deps.querier
+    let res: Result<swaprouter::msg::GetRouteResponse, ContractError> = deps
+        .querier
         .query_wasm_smart(swap_router, &query_msg)
-        .map_err(ContractError::Std)
+        .map_err(ContractError::Std);
+    if let Err(err) = res {
+        Err(err)
+    } else {
+        Ok(GetRouteResponse {
+            pool_route: res
+                .unwrap()
+                .pool_route
+                .iter()
+                .map(|route| SwapRoute {
+                    pool_id: route.pool_id,
+                    token_out_denom: route.token_out_denom.clone(),
+                })
+                .collect(),
+        })
+    }
 }

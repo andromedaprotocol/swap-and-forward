@@ -23,7 +23,7 @@ impl<Chain> Uploadable for SwapAndForwardContract<Chain> {
 
     fn wasm(_chain: &ChainInfoOwned) -> WasmPath {
         artifacts_dir_from_workspace!()
-            .find_wasm_path("swap_and_forward")
+            .find_wasm_path("swap_and_forward_astroport")
             .unwrap()
     }
 }

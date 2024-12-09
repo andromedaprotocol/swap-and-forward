@@ -15,7 +15,8 @@ use cw_utils::one_coin;
 
 use crate::{
     osmosis::{
-        execute_swap_osmosis_msg, handle_osmosis_swap_reply, query_get_route, OSMOSIS_MSG_FORWARD_ID, OSMOSIS_MSG_SWAP_ID
+        execute_swap_osmosis_msg, handle_osmosis_swap_reply, query_get_route,
+        OSMOSIS_MSG_FORWARD_ID, OSMOSIS_MSG_SWAP_ID,
     },
     state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER},
 };
@@ -168,13 +169,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         QueryMsg::GetRoute {
             from_denom,
             to_denom,
-        } => encode_binary(&query_get_route(
-            deps,
-            from_denom,
-            to_denom,
-        )?),
+        } => encode_binary(&query_get_route(deps, from_denom, to_denom)?),
     }
-
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
