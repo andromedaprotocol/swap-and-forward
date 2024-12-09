@@ -1,10 +1,12 @@
 use std::str::FromStr;
 
 use crate::contract::{execute, instantiate, migrate, query};
-use crate::msg::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SwapOperation};
 use andromeda_std::ado_base::MigrateMsg;
 use andromeda_std::amp::AndrAddr;
 use andromeda_std::common::denom::Asset;
+use andromeda_swap_and_forward::astroport::{
+    Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SwapOperation,
+};
 use cosmrs::cosmwasm::MsgExecuteContract;
 use cosmrs::AccountId;
 use cosmwasm_std::{to_json_binary, Binary, Decimal, Uint128};

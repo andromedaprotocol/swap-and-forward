@@ -22,10 +22,9 @@ use cosmwasm_std::{
 };
 use cw20::Cw20ExecuteMsg;
 
-use crate::{
-    msg::{SimulateSwapOperationResponse, SwapOperation},
-    state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER},
-};
+use crate::state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER};
+
+use andromeda_swap_and_forward::astroport::{SimulateSwapOperationResponse, SwapOperation};
 
 pub const ASTROPORT_MSG_SWAP_ID: u64 = 1;
 pub const ASTROPORT_MSG_FORWARD_ID: u64 = 2;
