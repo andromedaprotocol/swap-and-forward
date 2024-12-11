@@ -16,7 +16,7 @@ mod test {
         ExecuteMsgFns, InstantiateMsg, QueryMsgFns, Slippage, SwapRoute,
     };
 
-    use cw_orch_daemon::{networks::OSMO_5, Daemon};
+    use cw_orch_daemon::{networks::OSMO_5, Daemon, TxSender};
     use dotenv::dotenv;
 
     #[allow(dead_code)]
@@ -93,6 +93,8 @@ mod test {
     #[test]
     fn test_onchain_native() {
         let app_name = "swap and forward ado-0.1.2";
+        let app_name_parsed = app_name.replace(' ', "_");
+
         let swap_and_forward_component_name = "swap-and-forward";
         let splitter_component_name = "splitter";
 
@@ -128,24 +130,26 @@ mod test {
 
         // 4. execute swap operation
         let slippage = Slippage::MinOutputAmount(Uint128::one());
-        let to_denom =
+        let atom_denom =
             "ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477".to_string();
-        let _res = swap_and_forward_contract.get_route("uosmo", to_denom.clone());
+        let _res = swap_and_forward_contract.get_route("uosmo", atom_denom.clone());
         let forward_msg =
             to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send {}).unwrap();
+        let forward_addr = AndrAddr::from_string(format!(
+            "/home/{}/{}/{}",
+            daemon.sender().address(),
+            app_name_parsed,
+            splitter_component_name
+        ));
         swap_and_forward_contract
             .swap_and_forward(
                 slippage,
-                to_denom,
-                Some(AndrAddr::from_string(
-                    "osmo1v7t3xhrlwlxw4yhrezsm8dcpen8m6hz6h277p7vck9tax3a0e0kq5he5mt".to_string(),
-                )),
+                atom_denom.clone(),
+                Some(forward_addr),
                 Some(forward_msg),
                 Some(vec![SwapRoute {
                     pool_id: 94,
-                    token_out_denom:
-                        "ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477"
-                            .to_string(),
+                    token_out_denom: atom_denom.to_string(),
                 }]),
                 &[coin(1000000, denom)],
             )

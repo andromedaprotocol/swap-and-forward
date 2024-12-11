@@ -126,11 +126,10 @@ mod test {
         swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
 
         // 4. execute swap operation
+        let usdt_address = "neutron1vpsgrzedwd8fezpsu9fcfewvp6nmv4kzd7a6nutpmgeyjk3arlqsypnlhm";
         let res = swap_and_forward_contract
             .swap_and_forward(
-                Asset::Cw20Token(AndrAddr::from_string(
-                    "neutron1vpsgrzedwd8fezpsu9fcfewvp6nmv4kzd7a6nutpmgeyjk3arlqsypnlhm",
-                )),
+                Asset::Cw20Token(AndrAddr::from_string(usdt_address)),
                 None,
                 None,
                 None,
@@ -192,9 +191,10 @@ mod test {
         let forward_msg =
             to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send {}).unwrap();
 
+        let usdt_address = "neutron1vpsgrzedwd8fezpsu9fcfewvp6nmv4kzd7a6nutpmgeyjk3arlqsypnlhm";
         swap_and_forward_contract.execute_swap_from_cw20(
             &daemon,
-            "neutron1vpsgrzedwd8fezpsu9fcfewvp6nmv4kzd7a6nutpmgeyjk3arlqsypnlhm",
+            usdt_address,
             Uint128::new(36),
             Asset::NativeToken(denom.to_string()),
             Some(forward_addr),
@@ -253,22 +253,17 @@ mod test {
         let forward_msg =
             to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send {}).unwrap();
 
-        // Asset::NativeToken("ibc/7B7831150D7A8FF2A198DF4F8BD246F1BEA8E94B9ECD3EF7F8B6497B66BB206C".to_owned()),
+        let osmos_denom = "ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B";
+        let astro_denom = "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995";
         let res = swap_and_forward_contract
             .swap_and_forward(
-                Asset::NativeToken(
-                    "ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B"
-                        .to_owned(),
-                ),
+                Asset::NativeToken(osmos_denom.to_owned()),
                 Some(forward_addr),
                 Some(forward_msg),
                 None,
                 None,
                 None,
-                &[coin(
-                    100000000,
-                    "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995",
-                )],
+                &[coin(100000000, astro_denom)],
             )
             .unwrap();
         println!(
