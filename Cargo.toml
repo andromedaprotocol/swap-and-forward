@@ -1,7 +1,8 @@
 [workspace]
 members = [
-    "contracts/*"
-, "packages"]
+  "contracts/*",
+  "packages"
+]
 resolver = "2"
 
 [profile.release]
@@ -29,11 +30,14 @@ schemars = "0.8.16"
 serde = { version = "1.0.197", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.58" }
 cw-utils = "0.14.0"
-andromeda-std = {git = "https://github.com/andromedaprotocol/andromeda-core", package = "andromeda-std", branch = "development"}
+andromeda-app-contract = {git = "https://github.com/andromedaprotocol/andromeda-core", package = "andromeda-app-contract", branch = "main"}
+andromeda-std = {git = "https://github.com/andromedaprotocol/andromeda-core", package = "andromeda-std", branch = "main"}
 cw20 = "1.1.2"
 astroport = { git = "https://github.com/astroport-fi/astroport-core" } 
-andromeda-app = {git = "https://github.com/andromedaprotocol/andromeda-core", package = "andromeda-app", branch = "development"}
-andromeda-finance = {git = "https://github.com/andromedaprotocol/andromeda-core", package = "andromeda-finance", branch = "development"}
+andromeda-app = {git = "https://github.com/andromedaprotocol/andromeda-core", package = "andromeda-app", branch = "main"}
+andromeda-finance = {git = "https://github.com/andromedaprotocol/andromeda-core", package = "andromeda-finance", branch = "main"}
+swaprouter = { git = "https://github.com/osmosis-labs/osmosis", package = "swaprouter", features = ["imported"] } 
+osmosis-std="0.16.2"
 dotenv = "0.15.0"
 env_logger = "0.11.5"
 cosmrs = { version = "0.15.0", features = ["cosmwasm"]}

@@ -1,6 +1,10 @@
-use andromeda_std::{amp::AndrAddr, andr_exec, andr_instantiate, common::denom::Asset};
+use andromeda_std::{
+    amp::{AndrAddr, Recipient},
+    andr_exec, andr_instantiate,
+    common::denom::Asset,
+};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, Decimal, Uint128};
+use cosmwasm_std::{Decimal, Uint128};
 use cw20::Cw20ReceiveMsg;
 
 #[andr_instantiate]
@@ -13,19 +17,15 @@ pub struct InstantiateMsg {
 #[cw_serde]
 #[cfg_attr(not(target_arch = "wasm32"), derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
-    /// Swap cw20 asset into another asset using dex
+    /// Swap cw20 asset into another asset using astroport
     Receive(Cw20ReceiveMsg),
-    /// Swap native token into another asset using dex
+    /// Swap native token into another asset using astroport
     #[cfg_attr(not(target_arch = "wasm32"), cw_orch(payable))]
     SwapAndForward {
-        /// The name of the dex that is to be used for the swap operation
-        dex: String,
         /// The asset swap to be swapped to
         to_asset: Asset,
-        /// The address where the swapped token is supposed to be sent
-        forward_addr: Option<AndrAddr>,
-        /// The binary message that is to be sent with swapped token transfer
-        forward_msg: Option<Binary>,
+        /// The recipient where the swapped token is supposed to be sent
+        recipient: Option<Recipient>,
         /// The max spread. Equals to slippage tolerance / 100
         max_spread: Option<Decimal>,
         /// The minimum amount of tokens to receive from swap operation
@@ -40,14 +40,10 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum Cw20HookMsg {
     SwapAndForward {
-        /// The name of the dex that is to be used for the swap operation
-        dex: String,
         /// The asset swap to be swapped to
         to_asset: Asset,
-        /// The address where the swapped token is supposed to be sent
-        forward_addr: Option<AndrAddr>,
-        /// The binary message that is to be sent with swapped token transfer
-        forward_msg: Option<Binary>,
+        /// The recipient where the swapped token is supposed to be sent
+        recipient: Option<Recipient>,
         /// The max spread. Equals to slippage tolerance / 100
         max_spread: Option<Decimal>,
         /// The minimum amount of tokens to receive from swap operation
@@ -62,8 +58,6 @@ pub enum Cw20HookMsg {
 pub enum QueryMsg {
     #[returns(SimulateSwapOperationResponse)]
     SimulateSwapOperation {
-        /// The name of the dex that is to be used for the swap operation
-        dex: String,
         /// The amount of tokens to swap
         offer_amount: Uint128,
         /// The swap operation to perform

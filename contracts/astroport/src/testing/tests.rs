@@ -3,6 +3,7 @@ mod test {
     use std::str::FromStr;
 
     use andromeda_app::app::AppComponent;
+    use andromeda_app_contract::AppContract;
     use andromeda_finance::splitter::AddressPercent;
     use andromeda_std::{
         amp::{AndrAddr, Recipient},
@@ -12,9 +13,7 @@ mod test {
     use cosmwasm_std::{coin, to_json_binary, Addr, Decimal, Uint128};
     use cw_orch::prelude::*;
 
-    use crate::interfaces::{
-        app_interface::AppContract, swap_and_forward_interface::SwapAndForwardContract,
-    };
+    use crate::interfaces::swap_and_forward_interface::SwapAndForwardContract;
     use andromeda_swap_and_forward::astroport::{ExecuteMsgFns, InstantiateMsg};
 
     use cw_orch_daemon::{networks::PION_1, Daemon, TxSender};
@@ -43,7 +42,7 @@ mod test {
         let recipient_1 = "neutron13refwx2f8wkjt9htss6ken96ak924k794nnxkr";
         let recipient_2 = "neutron1wjnyhp5x3csl4nte8kpg0unzxn74x22nc5p0me";
 
-        let app_contract = AppContract::new("app-contract", daemon.clone());
+        let app_contract = AppContract::new(daemon.clone());
         app_contract.set_code_id(app_code_id);
         let swap_and_forward_init_msg = InstantiateMsg {
             kernel_address: kernel_address.to_string(),
@@ -73,6 +72,7 @@ mod test {
             lock_time: None,
             kernel_address: kernel_address.to_string(),
             owner: None,
+            default_recipient: None,
         };
 
         let splitter_component = AppComponent::new(
@@ -84,7 +84,19 @@ mod test {
             splitter_component.clone(),
             swap_and_forward_component.clone(),
         ];
-        app_contract.init(app_name, app_components, None);
+        app_contract
+            .instantiate(
+                &andromeda_app::app::InstantiateMsg {
+                    app_components,
+                    name: app_name.to_string(),
+                    chain_info: None,
+                    kernel_address: kernel_address.to_string(),
+                    owner: None,
+                },
+                None,
+                None,
+            )
+            .unwrap();
         app_contract.addr_str().unwrap()
     }
 
@@ -104,7 +116,7 @@ mod test {
         // upload ado if not uploaded
         // upload_ado(&daemon);
 
-        let app_contract = AppContract::new("app-contract", daemon.clone());
+        let app_contract = AppContract::new(daemon.clone());
         // instanitate app
         // let app_address = instantiate_ado_with_splitter(
         //     &daemon,
@@ -119,20 +131,17 @@ mod test {
         ));
 
         let swap_and_forward_addr: String =
-            app_contract.query_address_by_component_name(swap_and_forward_component_name);
+            app_contract.get_address(swap_and_forward_component_name);
 
         let swap_and_forward_contract =
             SwapAndForwardContract::new("swap-and-forward", daemon.clone());
         swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
 
         // 4. execute swap operation
+        let usdt_address = "neutron1vpsgrzedwd8fezpsu9fcfewvp6nmv4kzd7a6nutpmgeyjk3arlqsypnlhm";
         let res = swap_and_forward_contract
             .swap_and_forward(
-                "astroport".to_string(),
-                Asset::Cw20Token(AndrAddr::from_string(
-                    "neutron1vpsgrzedwd8fezpsu9fcfewvp6nmv4kzd7a6nutpmgeyjk3arlqsypnlhm",
-                )),
-                None,
+                Asset::Cw20Token(AndrAddr::from_string(usdt_address)),
                 None,
                 None,
                 None,
@@ -164,7 +173,7 @@ mod test {
         // upload ado if not uploaded
         // upload_ado(&daemon);
 
-        let app_contract = AppContract::new("app-contract", daemon.clone());
+        let app_contract = AppContract::new(daemon.clone());
         // instanitate app
         // let app_address = instantiate_ado_with_splitter(
         //     &daemon,
@@ -178,29 +187,32 @@ mod test {
         ));
 
         let swap_and_forward_addr: String =
-            app_contract.query_address_by_component_name(swap_and_forward_component_name);
+            app_contract.get_address(swap_and_forward_component_name);
 
         let swap_and_forward_contract =
             SwapAndForwardContract::new("swap-and-forward", daemon.clone());
         swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
 
-        let forward_addr = AndrAddr::from_string(format!(
-            "/home/{}/{}/{}",
-            daemon.sender().address(),
-            app_name_parsed,
-            splitter_component_name
-        ));
         let forward_msg =
-            to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send {}).unwrap();
+            to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send { config: None })
+                .unwrap();
+        let recipient = Recipient::new(
+            format!(
+                "/home/{}/{}/{}",
+                daemon.sender().address(),
+                app_name_parsed,
+                splitter_component_name
+            ),
+            Some(forward_msg),
+        );
 
+        let usdt_address = "neutron1vpsgrzedwd8fezpsu9fcfewvp6nmv4kzd7a6nutpmgeyjk3arlqsypnlhm";
         swap_and_forward_contract.execute_swap_from_cw20(
             &daemon,
-            "astroport".to_string(),
-            "neutron1vpsgrzedwd8fezpsu9fcfewvp6nmv4kzd7a6nutpmgeyjk3arlqsypnlhm",
+            usdt_address,
             Uint128::new(36),
             Asset::NativeToken(denom.to_string()),
-            Some(forward_addr),
-            Some(forward_msg),
+            Some(recipient),
             None,
             None,
             None,
@@ -226,7 +238,7 @@ mod test {
         // upload_ado(&daemon);
         // return;
 
-        let app_contract = AppContract::new("app-contract", daemon.clone());
+        let app_contract = AppContract::new(daemon.clone());
         // instanitate app
         // let app_address = instantiate_ado_with_splitter(
         //     &daemon,
@@ -240,38 +252,37 @@ mod test {
         ));
 
         let swap_and_forward_addr: String =
-            app_contract.query_address_by_component_name(swap_and_forward_component_name);
+            app_contract.get_address(swap_and_forward_component_name);
 
         let swap_and_forward_contract =
             SwapAndForwardContract::new("swap-and-forward", daemon.clone());
         swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
 
-        let forward_addr = AndrAddr::from_string(format!(
-            "/home/{}/{}/{}",
-            daemon.sender().address(),
-            app_name_parsed,
-            splitter_component_name
-        ));
         let forward_msg =
-            to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send {}).unwrap();
+            to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send { config: None })
+                .unwrap();
 
-        // Asset::NativeToken("ibc/7B7831150D7A8FF2A198DF4F8BD246F1BEA8E94B9ECD3EF7F8B6497B66BB206C".to_owned()),
+        let recipient = Recipient::new(
+            format!(
+                "/home/{}/{}/{}",
+                daemon.sender().address(),
+                app_name_parsed,
+                splitter_component_name
+            ),
+            Some(forward_msg),
+        );
+
+        let osmos_denom = "ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B";
+        let astro_denom = "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995";
+
         let res = swap_and_forward_contract
             .swap_and_forward(
-                "astroport".to_string(),
-                Asset::NativeToken(
-                    "ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B"
-                        .to_owned(),
-                ),
-                Some(forward_addr),
-                Some(forward_msg),
+                Asset::NativeToken(osmos_denom.to_owned()),
                 None,
                 None,
                 None,
-                &[coin(
-                    100000000,
-                    "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995",
-                )],
+                Some(recipient),
+                &[coin(100000000, astro_denom)],
             )
             .unwrap();
         println!(
