@@ -1,15 +1,14 @@
 use std::str::FromStr;
 
 use crate::contract::{execute, instantiate, migrate, query};
-use andromeda_std::ado_base::MigrateMsg;
-use andromeda_std::amp::AndrAddr;
 use andromeda_std::common::denom::Asset;
+use andromeda_std::{ado_base::MigrateMsg, amp::Recipient};
 use andromeda_swap_and_forward::astroport::{
     Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg, SwapOperation,
 };
 use cosmrs::cosmwasm::MsgExecuteContract;
 use cosmrs::AccountId;
-use cosmwasm_std::{to_json_binary, Binary, Decimal, Uint128};
+use cosmwasm_std::{to_json_binary, Decimal, Uint128};
 use cw_orch::{interface, prelude::*};
 use cw_orch_daemon::{Daemon, DaemonBase, TxSender, Wallet};
 
@@ -36,16 +35,14 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
         from_asset_addr: &str,
         from_amount: Uint128,
         to_asset: Asset,
-        forward_addr: Option<AndrAddr>,
-        forward_msg: Option<Binary>,
+        recipient: Option<Recipient>,
         max_spread: Option<Decimal>,
         minimum_receive: Option<Uint128>,
         operations: Option<Vec<SwapOperation>>,
     ) {
         let hook_msg = Cw20HookMsg::SwapAndForward {
             to_asset,
-            forward_addr,
-            forward_msg,
+            recipient,
             max_spread,
             minimum_receive,
             operations,

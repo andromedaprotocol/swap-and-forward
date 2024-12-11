@@ -150,18 +150,20 @@ mod test {
         let forward_msg =
             to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send { config: None })
                 .unwrap();
-        let forward_addr = AndrAddr::from_string(format!(
-            "/home/{}/{}/{}",
-            daemon.sender().address(),
-            app_name_parsed,
-            splitter_component_name
-        ));
+        let forward_addr = Recipient::new(
+            format!(
+                "/home/{}/{}/{}",
+                daemon.sender().address(),
+                app_name_parsed,
+                splitter_component_name
+            ),
+            Some(forward_msg),
+        );
         swap_and_forward_contract
             .swap_and_forward(
                 slippage,
                 atom_denom.clone(),
                 Some(forward_addr),
-                Some(forward_msg),
                 Some(vec![SwapRoute {
                     pool_id: 94,
                     token_out_denom: atom_denom.to_string(),

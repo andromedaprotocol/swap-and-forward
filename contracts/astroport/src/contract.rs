@@ -1,7 +1,7 @@
 use andromeda_std::{
     ado_base::{InstantiateMsg as BaseInstantiateMsg, MigrateMsg},
     ado_contract::ADOContract,
-    amp::AndrAddr,
+    amp::{AndrAddr, Recipient},
     common::{context::ExecuteContext, denom::Asset, encode_binary},
     error::ContractError,
 };
@@ -85,16 +85,14 @@ pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, 
         ExecuteMsg::Receive(msg) => handle_receive_cw20(ctx, msg),
         ExecuteMsg::SwapAndForward {
             to_asset,
-            forward_addr,
-            forward_msg,
+            recipient,
             max_spread,
             minimum_receive,
             operations,
         } => execute_swap_and_forward(
             ctx,
             to_asset,
-            forward_addr,
-            forward_msg,
+            recipient,
             max_spread,
             minimum_receive,
             operations,
@@ -120,24 +118,22 @@ fn handle_receive_cw20(
     match from_json(&cw20_msg.msg)? {
         Cw20HookMsg::SwapAndForward {
             to_asset,
-            forward_addr,
-            forward_msg,
+            recipient,
             max_spread,
             minimum_receive,
             operations,
         } => {
-            let forward_addr = match forward_addr {
-                None => AndrAddr::from_string(&sender),
-                Some(andr_addr) => andr_addr,
+            let recipient = match recipient {
+                None => Recipient::new(sender.clone(), None),
+                Some(recipient) => recipient,
             };
             swap_and_forward_cw20(
                 ctx,
                 from_asset,
                 Uint128::new(amount.u128()),
                 to_asset,
-                forward_addr,
+                recipient,
                 AndrAddr::from_string(sender),
-                forward_msg,
                 max_spread,
                 minimum_receive,
                 operations,
@@ -150,8 +146,7 @@ fn handle_receive_cw20(
 fn execute_swap_and_forward(
     ctx: ExecuteContext,
     to_asset: Asset,
-    forward_addr: Option<AndrAddr>,
-    forward_msg: Option<Binary>,
+    recipient: Option<Recipient>,
     max_spread: Option<Decimal>,
     minimum_receive: Option<Uint128>,
     operations: Option<Vec<SwapOperation>>,
@@ -162,9 +157,9 @@ fn execute_swap_and_forward(
 
     let from_asset = Asset::NativeToken(fund.denom);
     let sender = AndrAddr::from_string(&ctx.info.sender);
-    let forward_addr = match forward_addr {
-        None => sender.clone(),
-        Some(andr_addr) => andr_addr,
+    let recipient = match recipient {
+        None => Recipient::new(sender.clone(), None),
+        Some(recipient) => recipient,
     };
 
     let swap_msg = execute_swap_astroport_msg(
@@ -172,9 +167,8 @@ fn execute_swap_and_forward(
         from_asset,
         fund.amount,
         to_asset,
-        forward_addr.clone(),
+        recipient,
         sender,
-        forward_msg,
         max_spread,
         minimum_receive,
         operations,
@@ -189,9 +183,8 @@ fn swap_and_forward_cw20(
     from_asset: Asset,
     from_amount: Uint128,
     to_asset: Asset,
-    forward_addr: AndrAddr,
+    recipient: Recipient,
     refund_addr: AndrAddr,
-    forward_msg: Option<Binary>,
     max_spread: Option<Decimal>,
     minimum_receive: Option<Uint128>,
     operations: Option<Vec<SwapOperation>>,
@@ -201,9 +194,8 @@ fn swap_and_forward_cw20(
         from_asset,
         from_amount,
         to_asset,
-        forward_addr.clone(),
+        recipient,
         refund_addr,
-        forward_msg,
         max_spread,
         minimum_receive,
         operations,

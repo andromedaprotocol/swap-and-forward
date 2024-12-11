@@ -1,7 +1,7 @@
 use andromeda_std::{
     ado_base::{InstantiateMsg as BaseInstantiateMsg, MigrateMsg},
     ado_contract::ADOContract,
-    amp::AndrAddr,
+    amp::{AndrAddr, Recipient},
     common::{context::ExecuteContext, encode_binary},
     error::ContractError,
 };
@@ -82,11 +82,10 @@ pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, 
     match msg {
         ExecuteMsg::SwapAndForward {
             to_denom,
-            forward_addr,
-            forward_msg,
+            recipient,
             slippage,
             route,
-        } => execute_swap_and_forward(ctx, to_denom, forward_addr, forward_msg, slippage, route),
+        } => execute_swap_and_forward(ctx, to_denom, recipient, slippage, route),
         ExecuteMsg::UpdateSwapRouter { swap_router } => {
             execute_update_swap_router(ctx, swap_router)
         }
@@ -98,8 +97,7 @@ pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, 
 fn execute_swap_and_forward(
     ctx: ExecuteContext,
     to_denom: String,
-    forward_addr: Option<AndrAddr>,
-    forward_msg: Option<Binary>,
+    recipient: Option<Recipient>,
     slippage: Slippage,
     route: Option<Vec<SwapRoute>>,
 ) -> Result<Response, ContractError> {
@@ -109,9 +107,9 @@ fn execute_swap_and_forward(
 
     let from_denom = fund.denom;
     let sender = AndrAddr::from_string(&ctx.info.sender);
-    let forward_addr = match forward_addr {
-        None => sender.clone(),
-        Some(andr_addr) => andr_addr,
+    let recipient = match recipient {
+        None => Recipient::new(sender.clone(), None),
+        Some(recipient) => recipient,
     };
 
     let swap_msg = execute_swap_osmosis_msg(
@@ -119,9 +117,8 @@ fn execute_swap_and_forward(
         from_denom,
         fund.amount,
         to_denom,
-        forward_addr.clone(),
+        recipient,
         sender,
-        forward_msg,
         slippage,
         route,
     )?;

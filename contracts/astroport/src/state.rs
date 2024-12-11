@@ -1,20 +1,17 @@
 use andromeda_std::{
-    amp::{messages::AMPCtx, AndrAddr},
+    amp::{messages::AMPCtx, AndrAddr, Recipient},
     common::denom::Asset,
 };
-use cosmwasm_std::Binary;
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 pub struct ForwardReplyState {
-    /// Forward Address
-    pub addr: AndrAddr,
+    /// Forward Recipient
+    pub recipient: Recipient,
     /// Refund Address
     pub refund_addr: AndrAddr,
-    /// Optional binary msg forwarded to the forward address
-    pub msg: Option<Binary>,
     /// Amp ctx to be used for ibc communication
     pub amp_ctx: Option<AMPCtx>,
     /// Offered asset to the astroport

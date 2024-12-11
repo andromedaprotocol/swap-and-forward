@@ -1,6 +1,10 @@
-use andromeda_std::{amp::AndrAddr, andr_exec, andr_instantiate, common::denom::Asset};
+use andromeda_std::{
+    amp::{AndrAddr, Recipient},
+    andr_exec, andr_instantiate,
+    common::denom::Asset,
+};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, Decimal, Uint128};
+use cosmwasm_std::{Decimal, Uint128};
 use cw20::Cw20ReceiveMsg;
 
 #[andr_instantiate]
@@ -20,10 +24,8 @@ pub enum ExecuteMsg {
     SwapAndForward {
         /// The asset swap to be swapped to
         to_asset: Asset,
-        /// The address where the swapped token is supposed to be sent
-        forward_addr: Option<AndrAddr>,
-        /// The binary message that is to be sent with swapped token transfer
-        forward_msg: Option<Binary>,
+        /// The recipient where the swapped token is supposed to be sent
+        recipient: Option<Recipient>,
         /// The max spread. Equals to slippage tolerance / 100
         max_spread: Option<Decimal>,
         /// The minimum amount of tokens to receive from swap operation
@@ -40,10 +42,8 @@ pub enum Cw20HookMsg {
     SwapAndForward {
         /// The asset swap to be swapped to
         to_asset: Asset,
-        /// The address where the swapped token is supposed to be sent
-        forward_addr: Option<AndrAddr>,
-        /// The binary message that is to be sent with swapped token transfer
-        forward_msg: Option<Binary>,
+        /// The recipient where the swapped token is supposed to be sent
+        recipient: Option<Recipient>,
         /// The max spread. Equals to slippage tolerance / 100
         max_spread: Option<Decimal>,
         /// The minimum amount of tokens to receive from swap operation

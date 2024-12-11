@@ -1,6 +1,9 @@
-use andromeda_std::{amp::AndrAddr, andr_exec, andr_instantiate};
+use andromeda_std::{
+    amp::{AndrAddr, Recipient},
+    andr_exec, andr_instantiate,
+};
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, Decimal, Uint128};
+use cosmwasm_std::{Decimal, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 use swaprouter::Slippage as OsmosisSlippage;
 
@@ -19,10 +22,8 @@ pub enum ExecuteMsg {
     SwapAndForward {
         /// The asset swap to be swapped to
         to_denom: String,
-        /// The address where the swapped token is supposed to be sent
-        forward_addr: Option<AndrAddr>,
-        /// The binary message that is to be sent with swapped token transfer
-        forward_msg: Option<Binary>,
+        /// The recipient where the swapped token is supposed to be sent
+        recipient: Option<Recipient>,
         /// The slippage
         slippage: Slippage,
         /// The swap operations that is supposed to be taken

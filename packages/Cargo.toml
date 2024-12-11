@@ -1,6 +1,6 @@
 [package]
 name = "andromeda-swap-and-forward"
-version = "0.2.0"
+version = "0.1.0-beta"
 edition = "2021"
 description = "Utility methods and message definitions for the Andromeda Swap and Forward Contracts"
 license = "MIT"

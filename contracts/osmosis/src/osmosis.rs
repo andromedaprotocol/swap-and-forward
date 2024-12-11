@@ -4,14 +4,14 @@ use andromeda_std::{
     ado_contract::ADOContract,
     amp::{
         messages::{AMPMsg, AMPPkt},
-        AndrAddr,
+        AndrAddr, Recipient,
     },
     common::context::ExecuteContext,
     error::ContractError,
 };
 use cosmwasm_std::{
-    attr, coin, ensure, to_json_binary, Binary, Coin, Deps, DepsMut, Env, Reply, Response,
-    StdError, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    attr, coin, ensure, to_json_binary, Coin, Deps, DepsMut, Env, Reply, Response, StdError,
+    SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use swaprouter::msg::{ExecuteMsg as OsmosisExecuteMsg, QueryMsg as OsmosisQueryMsg};
 
@@ -28,9 +28,8 @@ pub(crate) fn execute_swap_osmosis_msg(
     from_denom: String,
     from_amount: Uint128,
     to_denom: String,
-    forward_addr: AndrAddr, // receiver where the swapped token goes to
-    refund_addr: AndrAddr,  // refund address
-    forward_msg: Option<Binary>,
+    recipient: Recipient,  // receiver where the swapped token goes to
+    refund_addr: AndrAddr, // refund address
     slippage: Slippage,
     route: Option<Vec<SwapRoute>>,
 ) -> Result<SubMsg, ContractError> {
@@ -59,9 +58,8 @@ pub(crate) fn execute_swap_osmosis_msg(
     FORWARD_REPLY_STATE.save(
         deps.storage,
         &ForwardReplyState {
-            addr: forward_addr,
+            recipient,
             refund_addr,
-            msg: forward_msg,
             amp_ctx,
             from_denom: from_denom.clone(),
             to_denom: to_denom.clone(),
@@ -114,9 +112,10 @@ pub fn handle_osmosis_swap_reply(
         )
     };
 
+    let Recipient { address, msg, .. } = state.recipient;
     let msg = AMPMsg::new(
-        state.addr.clone(),
-        state.msg.clone().unwrap_or_default(),
+        address.clone(),
+        msg.unwrap_or_default(),
         Some(funds.clone()),
     );
 
@@ -131,7 +130,7 @@ pub fn handle_osmosis_swap_reply(
         attr("dex", "osmosis"),
         attr("to_denom", state.to_denom.to_string()),
         attr("to_amount", return_amount),
-        attr("forward_addr", state.addr),
+        attr("forward_addr", address.to_string()),
         attr("kernel_address", kernel_address),
     ]);
     Ok(resp)

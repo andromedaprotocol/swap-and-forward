@@ -1,17 +1,14 @@
-use andromeda_std::amp::{messages::AMPCtx, AndrAddr};
-use cosmwasm_std::Binary;
+use andromeda_std::amp::{messages::AMPCtx, AndrAddr, Recipient};
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 pub struct ForwardReplyState {
-    /// Forward Address
-    pub addr: AndrAddr,
+    /// Recipient
+    pub recipient: Recipient,
     /// Refund Address
     pub refund_addr: AndrAddr,
-    /// Optional binary msg forwarded to the forward address
-    pub msg: Option<Binary>,
     /// Amp ctx to be used for ibc communication
     pub amp_ctx: Option<AMPCtx>,
     /// Offered denom to the osmosis

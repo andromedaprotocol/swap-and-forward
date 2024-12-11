@@ -4,7 +4,7 @@ use andromeda_std::{
     ado_contract::ADOContract,
     amp::{
         messages::{AMPMsg, AMPPkt},
-        AndrAddr,
+        AndrAddr, Recipient,
     },
     common::{context::ExecuteContext, denom::Asset},
     error::ContractError,
@@ -17,8 +17,8 @@ use astroport::{
     },
 };
 use cosmwasm_std::{
-    attr, coin, ensure, to_json_binary, wasm_execute, Binary, Coin, Decimal, Deps, DepsMut, Env,
-    Reply, Response, StdError, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    attr, coin, ensure, to_json_binary, wasm_execute, Coin, Decimal, Deps, DepsMut, Env, Reply,
+    Response, StdError, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use cw20::Cw20ExecuteMsg;
 
@@ -35,9 +35,8 @@ pub(crate) fn execute_swap_astroport_msg(
     from_asset: Asset,
     from_amount: Uint128,
     to_asset: Asset,
-    forward_addr: AndrAddr, // receiver where the swapped token goes to
-    refund_addr: AndrAddr,  // refund address
-    forward_msg: Option<Binary>,
+    recipient: Recipient,  // receiver where the swapped token goes to
+    refund_addr: AndrAddr, // refund address
     max_spread: Option<Decimal>,
     minimum_receive: Option<Uint128>,
     operations: Option<Vec<SwapOperation>>,
@@ -88,9 +87,8 @@ pub(crate) fn execute_swap_astroport_msg(
     FORWARD_REPLY_STATE.save(
         deps.storage,
         &ForwardReplyState {
-            addr: forward_addr,
+            recipient,
             refund_addr,
-            msg: forward_msg,
             amp_ctx,
             from_asset: from_asset.clone(),
             to_asset: to_asset.clone(),
@@ -192,9 +190,10 @@ pub fn handle_astroport_swap_reply(
                 )
             };
 
+            let Recipient { address, msg, .. } = &state.recipient;
             let msg = AMPMsg::new(
-                state.addr.clone(),
-                state.msg.clone().unwrap_or_default(),
+                address.clone(),
+                msg.clone().unwrap_or_default(),
                 Some(funds.clone()),
             );
 
@@ -203,8 +202,9 @@ pub fn handle_astroport_swap_reply(
             pkt.to_sub_msg(kernel_address, Some(funds), ASTROPORT_MSG_FORWARD_ID)?
         }
         Asset::Cw20Token(andr_addr) => {
+            let Recipient { address, .. } = &state.recipient;
             let transfer_msg = Cw20ExecuteMsg::Transfer {
-                recipient: state.addr.get_raw_address(&deps.as_ref())?.to_string(),
+                recipient: address.get_raw_address(&deps.as_ref())?.to_string(),
                 amount: return_amount,
             };
             let wasm_msg = wasm_execute(
@@ -222,7 +222,7 @@ pub fn handle_astroport_swap_reply(
         attr("to_denom", state.to_asset.to_string()),
         attr("to_amount", return_amount),
         attr("spread_amount", spread_amount),
-        attr("forward_addr", state.addr),
+        attr("recipient", state.recipient.get_addr()),
         attr("kernel_address", kernel_address),
     ]);
     Ok(resp)
