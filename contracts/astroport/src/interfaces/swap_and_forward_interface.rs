@@ -33,7 +33,6 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
     pub fn execute_swap_from_cw20(
         self,
         daemon: &Daemon,
-        dex: String,
         from_asset_addr: &str,
         from_amount: Uint128,
         to_asset: Asset,
@@ -44,7 +43,6 @@ impl SwapAndForwardContract<DaemonBase<Wallet>> {
         operations: Option<Vec<SwapOperation>>,
     ) {
         let hook_msg = Cw20HookMsg::SwapAndForward {
-            dex,
             to_asset,
             forward_addr,
             forward_msg,

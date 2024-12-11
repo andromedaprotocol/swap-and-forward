@@ -14,11 +14,9 @@ pub struct InstantiateMsg {
 #[cw_serde]
 #[cfg_attr(not(target_arch = "wasm32"), derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
-    /// Swap native token into another asset using dex
+    /// Swap native token into another asset using osmosis
     #[cfg_attr(not(target_arch = "wasm32"), cw_orch(payable))]
     SwapAndForward {
-        /// The name of the dex that is to be used for the swap operation
-        dex: String,
         /// The asset swap to be swapped to
         to_denom: String,
         /// The address where the swapped token is supposed to be sent

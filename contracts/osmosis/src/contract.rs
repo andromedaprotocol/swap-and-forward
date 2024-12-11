@@ -25,7 +25,7 @@ use andromeda_swap_and_forward::osmosis::{
     ExecuteMsg, InstantiateMsg, QueryMsg, Slippage, SwapRoute,
 };
 
-const CONTRACT_NAME: &str = "crates.io:swap-and-forward";
+const CONTRACT_NAME: &str = "crates.io:swap-and-forward-osmosis";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -81,21 +81,12 @@ pub fn execute(
 pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::SwapAndForward {
-            dex,
             to_denom,
             forward_addr,
             forward_msg,
             slippage,
             route,
-        } => execute_swap_and_forward(
-            ctx,
-            dex,
-            to_denom,
-            forward_addr,
-            forward_msg,
-            slippage,
-            route,
-        ),
+        } => execute_swap_and_forward(ctx, to_denom, forward_addr, forward_msg, slippage, route),
         ExecuteMsg::UpdateSwapRouter { swap_router } => {
             execute_update_swap_router(ctx, swap_router)
         }
@@ -106,7 +97,6 @@ pub fn handle_execute(ctx: ExecuteContext, msg: ExecuteMsg) -> Result<Response, 
 #[allow(clippy::too_many_arguments)]
 fn execute_swap_and_forward(
     ctx: ExecuteContext,
-    dex: String,
     to_denom: String,
     forward_addr: Option<AndrAddr>,
     forward_msg: Option<Binary>,
@@ -124,20 +114,17 @@ fn execute_swap_and_forward(
         Some(andr_addr) => andr_addr,
     };
 
-    let swap_msg = match dex.as_str() {
-        "osmosis" => execute_swap_osmosis_msg(
-            ctx,
-            from_denom,
-            fund.amount,
-            to_denom,
-            forward_addr.clone(),
-            sender,
-            forward_msg,
-            slippage,
-            route,
-        )?,
-        _ => return Err(ContractError::Std(StdError::generic_err("Unsupported Dex"))),
-    };
+    let swap_msg = execute_swap_osmosis_msg(
+        ctx,
+        from_denom,
+        fund.amount,
+        to_denom,
+        forward_addr.clone(),
+        sender,
+        forward_msg,
+        slippage,
+        route,
+    )?;
 
     Ok(Response::default().add_submessage(swap_msg))
 }
@@ -187,15 +174,11 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
             if msg.result.is_err() {
                 Err(ContractError::Std(StdError::generic_err(format!(
-                    "{:?} swap failed with error: {:?}",
-                    state.dex,
+                    "Osmosis swap failed with error: {:?}",
                     msg.result.unwrap_err()
                 ))))
             } else {
-                match state.dex.as_str() {
-                    "osmosis" => handle_osmosis_swap_reply(deps, env, msg, state),
-                    _ => Err(ContractError::Std(StdError::generic_err("Unsupported dex"))),
-                }
+                handle_osmosis_swap_reply(deps, env, msg, state)
             }
         }
         OSMOSIS_MSG_FORWARD_ID => {

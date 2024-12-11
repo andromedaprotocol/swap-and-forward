@@ -128,7 +128,6 @@ mod test {
         // 4. execute swap operation
         let res = swap_and_forward_contract
             .swap_and_forward(
-                "astroport".to_string(),
                 Asset::Cw20Token(AndrAddr::from_string(
                     "neutron1vpsgrzedwd8fezpsu9fcfewvp6nmv4kzd7a6nutpmgeyjk3arlqsypnlhm",
                 )),
@@ -195,7 +194,6 @@ mod test {
 
         swap_and_forward_contract.execute_swap_from_cw20(
             &daemon,
-            "astroport".to_string(),
             "neutron1vpsgrzedwd8fezpsu9fcfewvp6nmv4kzd7a6nutpmgeyjk3arlqsypnlhm",
             Uint128::new(36),
             Asset::NativeToken(denom.to_string()),
@@ -258,7 +256,6 @@ mod test {
         // Asset::NativeToken("ibc/7B7831150D7A8FF2A198DF4F8BD246F1BEA8E94B9ECD3EF7F8B6497B66BB206C".to_owned()),
         let res = swap_and_forward_contract
             .swap_and_forward(
-                "astroport".to_string(),
                 Asset::NativeToken(
                     "ibc/0471F1C4E7AFD3F07702BEF6DC365268D64570F7C1FDC98EA6098DD6DE59817B"
                         .to_owned(),

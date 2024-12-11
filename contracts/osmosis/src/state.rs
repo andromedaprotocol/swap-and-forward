@@ -12,13 +12,11 @@ pub struct ForwardReplyState {
     pub refund_addr: AndrAddr,
     /// Optional binary msg forwarded to the forward address
     pub msg: Option<Binary>,
-    /// Dex used for swap
-    pub dex: String,
     /// Amp ctx to be used for ibc communication
     pub amp_ctx: Option<AMPCtx>,
-    /// Offered denom to the dex
+    /// Offered denom to the osmosis
     pub from_denom: String,
-    /// Asked denom returning from the dex
+    /// Asked denom returning from the osmosis
     pub to_denom: String,
 }
 

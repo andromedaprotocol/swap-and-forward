@@ -135,7 +135,6 @@ mod test {
             to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send {}).unwrap();
         swap_and_forward_contract
             .swap_and_forward(
-                "osmosis".to_string(),
                 slippage,
                 to_denom,
                 Some(AndrAddr::from_string(

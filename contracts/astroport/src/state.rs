@@ -15,13 +15,11 @@ pub struct ForwardReplyState {
     pub refund_addr: AndrAddr,
     /// Optional binary msg forwarded to the forward address
     pub msg: Option<Binary>,
-    /// Dex used for swap
-    pub dex: String,
     /// Amp ctx to be used for ibc communication
     pub amp_ctx: Option<AMPCtx>,
-    /// Offered asset to the dex
+    /// Offered asset to the astroport
     pub from_asset: Asset,
-    /// Asked asset returning from the dex
+    /// Asked asset returning from the astroport
     pub to_asset: Asset,
 }
 

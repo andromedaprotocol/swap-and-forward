@@ -61,7 +61,6 @@ pub(crate) fn execute_swap_osmosis_msg(
             addr: forward_addr,
             refund_addr,
             msg: forward_msg,
-            dex: "osmosis".to_string(),
             amp_ctx,
             from_denom: from_denom.clone(),
             to_denom: to_denom.clone(),
@@ -128,7 +127,7 @@ pub fn handle_osmosis_swap_reply(
 
     resp = resp.add_submessage(transfer_msg).add_attributes(vec![
         attr("action", "swap_and_forward"),
-        attr("dex", state.dex),
+        attr("dex", "osmosis"),
         attr("to_denom", state.to_denom.to_string()),
         attr("to_amount", return_amount),
         attr("forward_addr", state.addr),

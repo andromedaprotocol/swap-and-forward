@@ -13,13 +13,11 @@ pub struct InstantiateMsg {
 #[cw_serde]
 #[cfg_attr(not(target_arch = "wasm32"), derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
-    /// Swap cw20 asset into another asset using dex
+    /// Swap cw20 asset into another asset using astroport
     Receive(Cw20ReceiveMsg),
-    /// Swap native token into another asset using dex
+    /// Swap native token into another asset using astroport
     #[cfg_attr(not(target_arch = "wasm32"), cw_orch(payable))]
     SwapAndForward {
-        /// The name of the dex that is to be used for the swap operation
-        dex: String,
         /// The asset swap to be swapped to
         to_asset: Asset,
         /// The address where the swapped token is supposed to be sent
@@ -40,8 +38,6 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum Cw20HookMsg {
     SwapAndForward {
-        /// The name of the dex that is to be used for the swap operation
-        dex: String,
         /// The asset swap to be swapped to
         to_asset: Asset,
         /// The address where the swapped token is supposed to be sent
@@ -62,8 +58,6 @@ pub enum Cw20HookMsg {
 pub enum QueryMsg {
     #[returns(SimulateSwapOperationResponse)]
     SimulateSwapOperation {
-        /// The name of the dex that is to be used for the swap operation
-        dex: String,
         /// The amount of tokens to swap
         offer_amount: Uint128,
         /// The swap operation to perform

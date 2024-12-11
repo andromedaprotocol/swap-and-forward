@@ -91,7 +91,6 @@ pub(crate) fn execute_swap_astroport_msg(
             addr: forward_addr,
             refund_addr,
             msg: forward_msg,
-            dex: "astroport".to_string(),
             amp_ctx,
             from_asset: from_asset.clone(),
             to_asset: to_asset.clone(),
@@ -219,7 +218,7 @@ pub fn handle_astroport_swap_reply(
     let kernel_address = ADOContract::default().get_kernel_address(deps.storage)?;
     resp = resp.add_submessage(transfer_msg).add_attributes(vec![
         attr("action", "swap_and_forward"),
-        attr("dex", state.dex),
+        attr("dex", "astroport"),
         attr("to_denom", state.to_asset.to_string()),
         attr("to_amount", return_amount),
         attr("spread_amount", spread_amount),
