@@ -1,6 +1,6 @@
 [package]
 name = "swap-and-forward-astroport"
-version = "0.2.0"
+version = "0.1.0-beta"
 authors = ["cowboy0015 <web3pirate@outlook.com>"]
 edition = "2021"
 

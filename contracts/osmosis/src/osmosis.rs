@@ -53,6 +53,7 @@ pub(crate) fn execute_swap_osmosis_msg(
         None
     };
 
+    // Generate route for the `OsmosisExecuteMsg::Swap` message
     let route = route.map(|route| route.iter().map(|v| v.clone().into()).collect());
 
     FORWARD_REPLY_STATE.save(
