@@ -164,17 +164,24 @@ fn execute_swap_and_forward(
 
     let swap_msg = execute_swap_astroport_msg(
         ctx,
-        from_asset,
+        from_asset.clone(),
         fund.amount,
-        to_asset,
-        recipient,
+        to_asset.clone(),
+        recipient.clone(),
         sender,
         max_spread,
         minimum_receive,
         operations,
     )?;
 
-    Ok(Response::default().add_submessage(swap_msg))
+    Ok(Response::default()
+        .add_submessage(swap_msg)
+        .add_attributes(vec![
+            attr("from_asset", from_asset.to_string()),
+            attr("from_amount", fund.amount),
+            attr("to_asset", to_asset.to_string()),
+            attr("recipient", recipient.get_addr()),
+        ]))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -191,17 +198,24 @@ fn swap_and_forward_cw20(
 ) -> Result<Response, ContractError> {
     let swap_msg = execute_swap_astroport_msg(
         ctx,
-        from_asset,
+        from_asset.clone(),
         from_amount,
-        to_asset,
-        recipient,
+        to_asset.clone(),
+        recipient.clone(),
         refund_addr,
         max_spread,
         minimum_receive,
         operations,
     )?;
 
-    Ok(Response::default().add_submessage(swap_msg))
+    Ok(Response::default()
+        .add_submessage(swap_msg)
+        .add_attributes(vec![
+            attr("from_asset", from_asset.to_string()),
+            attr("from_amount", from_amount),
+            attr("to_asset", to_asset.to_string()),
+            attr("recipient", recipient.get_addr()),
+        ]))
 }
 
 fn execute_update_swap_router(

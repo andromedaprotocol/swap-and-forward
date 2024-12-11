@@ -114,16 +114,23 @@ fn execute_swap_and_forward(
 
     let swap_msg = execute_swap_osmosis_msg(
         ctx,
-        from_denom,
+        from_denom.clone(),
         fund.amount,
-        to_denom,
-        recipient,
+        to_denom.clone(),
+        recipient.clone(),
         sender,
         slippage,
         route,
     )?;
 
-    Ok(Response::default().add_submessage(swap_msg))
+    Ok(Response::default()
+        .add_submessage(swap_msg)
+        .add_attributes(vec![
+            attr("from_denom", from_denom),
+            attr("from_amount", fund.amount),
+            attr("to_denom", to_denom),
+            attr("recipient", recipient.get_addr()),
+        ]))
 }
 
 fn execute_update_swap_router(
