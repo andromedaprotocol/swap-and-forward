@@ -33,6 +33,7 @@ swaprouter = { workspace = true }
 andromeda-swap-and-forward = { workspace = true }
 
 [dev-dependencies]
+andromeda-app-contract = { workspace = true }
 andromeda-app = { workspace = true }
 andromeda-finance = { workspace = true }
 dotenv = { workspace = true }

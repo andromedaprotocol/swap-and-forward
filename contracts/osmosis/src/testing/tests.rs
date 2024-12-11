@@ -9,9 +9,9 @@ mod test {
     use cosmwasm_std::{coin, to_json_binary, Addr, Decimal, Uint128};
     use cw_orch::prelude::*;
 
-    use crate::interfaces::{
-        app_interface::AppContract, swap_and_forward_interface::SwapAndForwardContract,
-    };
+    use crate::interfaces::swap_and_forward_interface::SwapAndForwardContract;
+    use andromeda_app_contract::AppContract;
+
     use andromeda_swap_and_forward::osmosis::{
         ExecuteMsgFns, InstantiateMsg, QueryMsgFns, Slippage, SwapRoute,
     };
@@ -42,7 +42,7 @@ mod test {
         let recipient_1 = "osmo18epw87zc64a6m63323l6je0nlwdhnjpghtsyq8";
         let recipient_2 = "osmo13refwx2f8wkjt9htss6ken96ak924k79ehf56k";
 
-        let app_contract = AppContract::new("app-contract", daemon.clone());
+        let app_contract = AppContract::new(daemon.clone());
         app_contract.set_code_id(app_code_id);
         let swap_and_forward_init_msg = InstantiateMsg {
             kernel_address: kernel_address.to_string(),
@@ -71,6 +71,7 @@ mod test {
 
         let splitter_init_msg = andromeda_finance::splitter::InstantiateMsg {
             recipients,
+            default_recipient: None,
             lock_time: None,
             kernel_address: kernel_address.to_string(),
             owner: None,
@@ -85,7 +86,20 @@ mod test {
             splitter_component.clone(),
             swap_and_forward_component.clone(),
         ];
-        app_contract.init(app_name, app_components, None);
+
+        app_contract
+            .instantiate(
+                &andromeda_app::app::InstantiateMsg {
+                    app_components,
+                    name: app_name.to_string(),
+                    chain_info: None,
+                    kernel_address: kernel_address.to_string(),
+                    owner: None,
+                },
+                None,
+                None,
+            )
+            .unwrap();
         app_contract.addr_str().unwrap()
     }
 
@@ -108,7 +122,7 @@ mod test {
         // upload_ado(&daemon);
         // return;
 
-        let app_contract = AppContract::new("app-contract", daemon.clone());
+        let app_contract = AppContract::new(daemon.clone());
         // instanitate app
         let app_address = instantiate_ado_with_splitter(
             &daemon,
@@ -122,7 +136,7 @@ mod test {
         ));
 
         let swap_and_forward_addr: String =
-            app_contract.query_address_by_component_name(swap_and_forward_component_name);
+            app_contract.get_address(swap_and_forward_component_name);
 
         let swap_and_forward_contract =
             SwapAndForwardContract::new("swap-and-forward", daemon.clone());
@@ -134,7 +148,8 @@ mod test {
             "ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477".to_string();
         let _res = swap_and_forward_contract.get_route("uosmo", atom_denom.clone());
         let forward_msg =
-            to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send {}).unwrap();
+            to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send { config: None })
+                .unwrap();
         let forward_addr = AndrAddr::from_string(format!(
             "/home/{}/{}/{}",
             daemon.sender().address(),

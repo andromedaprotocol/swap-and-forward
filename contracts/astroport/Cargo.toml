@@ -36,6 +36,7 @@ andromeda-swap-and-forward = { workspace = true }
 
 [dev-dependencies]
 andromeda-app = { workspace = true }
+andromeda-app-contract = { workspace = true }
 andromeda-finance = { workspace = true }
 dotenv = { workspace = true }
 env_logger = { workspace = true }
