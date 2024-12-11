@@ -1,4 +1,5 @@
 use andromeda_std::amp::{messages::AMPCtx, AndrAddr, Recipient};
+use cosmwasm_std::Uint128;
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -15,6 +16,8 @@ pub struct ForwardReplyState {
     pub from_denom: String,
     /// Asked denom returning from the osmosis
     pub to_denom: String,
+    /// Balance of the target asset before swapping
+    pub prev_balance: Uint128,
 }
 
 pub const FORWARD_REPLY_STATE: Item<ForwardReplyState> = Item::new("forward_reply_state");

@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use andromeda_std::{
     ado_contract::ADOContract,
     amp::{
@@ -18,9 +16,9 @@ use astroport::{
 };
 use cosmwasm_std::{
     attr, coin, ensure, to_json_binary, wasm_execute, Coin, Decimal, Deps, DepsMut, Env, Reply,
-    Response, StdError, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    Response, StdError, SubMsg, Uint128, WasmMsg,
 };
-use cw20::Cw20ExecuteMsg;
+use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg};
 
 use crate::state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER};
 
@@ -41,7 +39,7 @@ pub(crate) fn execute_swap_astroport_msg(
     minimum_receive: Option<Uint128>,
     operations: Option<Vec<SwapOperation>>,
 ) -> Result<SubMsg, ContractError> {
-    let ExecuteContext { deps, .. } = ctx;
+    let ExecuteContext { deps, env, .. } = ctx;
 
     // Prepare offer and ask asset
     ensure!(from_asset != to_asset, ContractError::DuplicateTokens {});
@@ -84,6 +82,7 @@ pub(crate) fn execute_swap_astroport_msg(
         None
     };
 
+    let prev_balance = query_balance(&deps.as_ref(), &env, &to_asset)?;
     FORWARD_REPLY_STATE.save(
         deps.storage,
         &ForwardReplyState {
@@ -92,6 +91,7 @@ pub(crate) fn execute_swap_astroport_msg(
             amp_ctx,
             from_asset: from_asset.clone(),
             to_asset: to_asset.clone(),
+            prev_balance,
         },
     )?;
 
@@ -163,13 +163,15 @@ pub fn handle_astroport_swap_reply(
     msg: Reply,
     state: ForwardReplyState,
 ) -> Result<Response, ContractError> {
-    let AstroportSwapResponse {
-        spread_amount,
-        return_amount,
-    } = match parse_astroport_swap_reply(msg) {
-        Ok(resp) => resp,
-        Err(e) => return Err(e),
-    };
+    let balance = query_balance(&deps.as_ref(), &env, &state.to_asset)?;
+    let return_amount = balance.checked_sub(state.prev_balance)?;
+
+    if return_amount.is_zero() {
+        return Err(ContractError::Std(StdError::generic_err(format!(
+            "Incomplete data in Osmosis swap response: {:?}",
+            msg
+        ))));
+    }
 
     let mut resp = Response::default();
 
@@ -221,55 +223,35 @@ pub fn handle_astroport_swap_reply(
         attr("dex", "astroport"),
         attr("to_denom", state.to_asset.to_string()),
         attr("to_amount", return_amount),
-        attr("spread_amount", spread_amount),
         attr("recipient", state.recipient.get_addr()),
         attr("kernel_address", kernel_address),
     ]);
     Ok(resp)
 }
 
-pub(crate) fn parse_astroport_swap_reply(
-    msg: Reply,
-) -> Result<AstroportSwapResponse, ContractError> {
-    match msg.result {
-        SubMsgResult::Ok(response) => {
-            // Extract relevant information from events
-            let mut spread_amount = Uint128::zero();
-            let mut return_amount = Uint128::zero();
-
-            for event in response.events.iter() {
-                if event.ty == "wasm" {
-                    for attr in event.attributes.iter() {
-                        match attr.key.as_str() {
-                            "return_amount" => {
-                                return_amount = Uint128::from_str(&attr.value)?;
-                            }
-                            "spread_amount" => {
-                                spread_amount = Uint128::from_str(&attr.value)?;
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-            }
-
-            if return_amount.is_zero() {
-                return Err(ContractError::Std(StdError::generic_err(format!(
-                    "Incomplete data in Astroport swap response: {:?}",
-                    response.events
-                ))));
-            }
-
-            Ok(AstroportSwapResponse {
-                return_amount,
-                spread_amount,
-            })
+pub(crate) fn query_balance(
+    deps: &Deps,
+    env: &Env,
+    asset: &Asset,
+) -> Result<Uint128, ContractError> {
+    let balance = match &asset {
+        Asset::Cw20Token(andr_addr) => {
+            let contract_addr = andr_addr.get_raw_address(deps)?;
+            let res: BalanceResponse = deps.querier.query_wasm_smart(
+                contract_addr,
+                &Cw20QueryMsg::Balance {
+                    address: env.contract.address.to_string(),
+                },
+            )?;
+            res.balance
         }
-        SubMsgResult::Err(err) => Err(ContractError::Std(StdError::generic_err(format!(
-            "Astroport swap failed with error: {:?}",
-            err
-        )))),
-    }
+        Asset::NativeToken(denom) => {
+            deps.querier
+                .query_balance(env.contract.address.to_string(), denom)?
+                .amount
+        }
+    };
+    Ok(balance)
 }
 
 pub fn query_simulate_astro_swap_operation(

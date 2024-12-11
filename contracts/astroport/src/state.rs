@@ -2,6 +2,7 @@ use andromeda_std::{
     amp::{messages::AMPCtx, AndrAddr, Recipient},
     common::denom::Asset,
 };
+use cosmwasm_std::Uint128;
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -18,6 +19,8 @@ pub struct ForwardReplyState {
     pub from_asset: Asset,
     /// Asked asset returning from the astroport
     pub to_asset: Asset,
+    /// Balance of the target asset before swapping
+    pub prev_balance: Uint128,
 }
 
 pub const FORWARD_REPLY_STATE: Item<ForwardReplyState> = Item::new("forward_reply_state");
