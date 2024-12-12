@@ -22,8 +22,9 @@ mod test {
     #[allow(dead_code)]
     fn upload_ado(daemon: &Daemon) {
         let swap_and_forward_contract =
-            SwapAndForwardContract::new("swap-and-forward", daemon.clone());
-        swap_and_forward_contract.upload().unwrap();
+            SwapAndForwardContract::new("swap-and-forward-astroport", daemon.clone());
+        let res = swap_and_forward_contract.upload();
+        println!("upload res: {:?}", res);
         println!(
             "swap_and_forward_contract code_id: {:?}",
             swap_and_forward_contract.code_id().unwrap()
@@ -38,7 +39,8 @@ mod test {
     ) -> String {
         let app_code_id = 7966;
         let kernel_address = "neutron1zlwfu3wurn98zv3qe4cln0p4crwvfvjkn703vhhcajh6h3v00zzsdadsd8";
-        let swap_ado_type = "swap-and-forward@0.1.0";
+        let swap_ado_type = "swap-and-forward-astroport";
+        // let swap_ado_type = "swap-and-forward-astroport@0.1.0";
         let recipient_1 = "neutron13refwx2f8wkjt9htss6ken96ak924k794nnxkr";
         let recipient_2 = "neutron1wjnyhp5x3csl4nte8kpg0unzxn74x22nc5p0me";
 
@@ -72,7 +74,7 @@ mod test {
             lock_time: None,
             kernel_address: kernel_address.to_string(),
             owner: None,
-            default_recipient: None,
+            // default_recipient: None,
         };
 
         let splitter_component = AppComponent::new(
@@ -103,9 +105,9 @@ mod test {
     #[ignore]
     #[test]
     fn test_onchain_native() {
-        // let app_name = "swap and forward ado";
-        let swap_and_forward_component_name = "swap-and-forward";
-        // let splitter_component_name = "splitter";
+        let app_name = "swap and forward astroport ado";
+        let swap_and_forward_component_name = "swap-and-forward-astroport";
+        let splitter_component_name = "splitter";
 
         dotenv().ok();
         env_logger::init();
@@ -115,26 +117,27 @@ mod test {
 
         // upload ado if not uploaded
         // upload_ado(&daemon);
+        // return;
 
         let app_contract = AppContract::new(daemon.clone());
         // instanitate app
-        // let app_address = instantiate_ado_with_splitter(
-        //     &daemon,
-        //     app_name,
-        //     swap_and_forward_component_name,
-        //     splitter_component_name,
-        // );
+        let app_address = instantiate_ado_with_splitter(
+            &daemon,
+            app_name,
+            swap_and_forward_component_name,
+            splitter_component_name,
+        );
         // println!("======================app_address: {:?}", app_address);
         app_contract.set_address(&Addr::unchecked(
-            // app_address,
-            "neutron1x5mj0565mqrq5h7wsm66jlsscu0svlx2yj9ydkrwer5pmysj6v4shyu8mk",
+            app_address,
+            // "neutron1x5mj0565mqrq5h7wsm66jlsscu0svlx2yj9ydkrwer5pmysj6v4shyu8mk",
         ));
 
         let swap_and_forward_addr: String =
             app_contract.get_address(swap_and_forward_component_name);
 
         let swap_and_forward_contract =
-            SwapAndForwardContract::new("swap-and-forward", daemon.clone());
+            SwapAndForwardContract::new("swap-and-forward-astroport", daemon.clone());
         swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
 
         // 4. execute swap operation
@@ -158,9 +161,9 @@ mod test {
     #[ignore]
     #[test]
     fn test_onchain_cw20() {
-        let app_name = "swap and forward ado";
+        let app_name = "swap and forward astroport ado";
         let app_name_parsed = app_name.replace(' ', "_");
-        let swap_and_forward_component_name = "swap-and-forward";
+        let swap_and_forward_component_name = "swap-and-forward-astroport";
         let splitter_component_name = "splitter";
 
         dotenv().ok();
@@ -183,7 +186,7 @@ mod test {
         // );
         app_contract.set_address(&Addr::unchecked(
             // app_address,
-            "neutron1x5mj0565mqrq5h7wsm66jlsscu0svlx2yj9ydkrwer5pmysj6v4shyu8mk",
+            "neutron1e7x86cdypvphju9ue7qg49pe6263rz988pup85dsp2yy72lygpaqzrqxu9",
         ));
 
         let swap_and_forward_addr: String =
@@ -193,9 +196,10 @@ mod test {
             SwapAndForwardContract::new("swap-and-forward", daemon.clone());
         swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
 
-        let forward_msg =
-            to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send { config: None })
-                .unwrap();
+        let forward_msg = to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send {
+                // config: None
+            })
+        .unwrap();
         let recipient = Recipient::new(
             format!(
                 "/home/{}/{}/{}",
@@ -223,9 +227,9 @@ mod test {
     #[ignore]
     #[test]
     fn test_onchain_native_to_native() {
-        let app_name = "swap and forward ado with updated vfs";
+        let app_name = "swap and forward astroport ado";
         let app_name_parsed = app_name.replace(' ', "_");
-        let swap_and_forward_component_name = "swap-and-forward";
+        let swap_and_forward_component_name = "swap-and-forward-astroport";
         let splitter_component_name = "splitter";
 
         dotenv().ok();
@@ -248,19 +252,20 @@ mod test {
         // );
         app_contract.set_address(&Addr::unchecked(
             // app_address, //
-            "neutron1x5mj0565mqrq5h7wsm66jlsscu0svlx2yj9ydkrwer5pmysj6v4shyu8mk",
+            "neutron1e7x86cdypvphju9ue7qg49pe6263rz988pup85dsp2yy72lygpaqzrqxu9",
         ));
 
         let swap_and_forward_addr: String =
             app_contract.get_address(swap_and_forward_component_name);
 
         let swap_and_forward_contract =
-            SwapAndForwardContract::new("swap-and-forward", daemon.clone());
+            SwapAndForwardContract::new("swap-and-forward-astroport", daemon.clone());
         swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
 
-        let forward_msg =
-            to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send { config: None })
-                .unwrap();
+        let forward_msg = to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send {
+                // config: None 
+            })
+        .unwrap();
 
         let recipient = Recipient::new(
             format!(

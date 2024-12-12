@@ -82,7 +82,7 @@ name = "andromeda-app"
 version = "1.0.0"
 source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=main#282fa0f48dcee4f42e576b59e045e0bbd7bdb9ec"
 dependencies = [
- "andromeda-std",
+ "andromeda-std 1.3.4",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-orch",
@@ -95,7 +95,7 @@ version = "1.1.2"
 source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=main#282fa0f48dcee4f42e576b59e045e0bbd7bdb9ec"
 dependencies = [
  "andromeda-app",
- "andromeda-std",
+ "andromeda-std 1.3.4",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-orch",
@@ -107,16 +107,12 @@ dependencies = [
 [[package]]
 name = "andromeda-finance"
 version = "1.0.0"
-source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=main#282fa0f48dcee4f42e576b59e045e0bbd7bdb9ec"
+source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=v1.1.0-rc1#3d362f9a39c0ac9325d8a4dd635d8fd74054253b"
 dependencies = [
- "andromeda-std",
+ "andromeda-std 1.1.1",
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-orch",
  "cw-utils 1.0.3",
- "cw20",
- "cw3",
- "cw4",
  "cw721 0.18.0",
  "cw721-base 0.18.0",
  "schemars",
@@ -134,11 +130,49 @@ dependencies = [
 ]
 
 [[package]]
+name = "andromeda-macros"
+version = "1.0.0"
+source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=v1.1.0-rc1#3d362f9a39c0ac9325d8a4dd635d8fd74054253b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "andromeda-std"
+version = "1.1.1"
+source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=v1.1.0-rc1#3d362f9a39c0ac9325d8a4dd635d8fd74054253b"
+dependencies = [
+ "andromeda-macros 1.0.0 (git+https://github.com/andromedaprotocol/andromeda-core?branch=v1.1.0-rc1)",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-asset",
+ "cw-storage-plus 1.2.0",
+ "cw-utils 1.0.3",
+ "cw2 1.1.2",
+ "cw20",
+ "cw20-base",
+ "cw721 0.18.0",
+ "cw721-base 0.18.0",
+ "enum-repr",
+ "hex",
+ "lazy_static",
+ "regex",
+ "schemars",
+ "semver",
+ "serde",
+ "serde-json-wasm 0.5.2",
+ "strum_macros",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "andromeda-std"
 version = "1.3.4"
 source = "git+https://github.com/andromedaprotocol/andromeda-core?branch=main#282fa0f48dcee4f42e576b59e045e0bbd7bdb9ec"
 dependencies = [
- "andromeda-macros",
+ "andromeda-macros 1.0.0 (git+https://github.com/andromedaprotocol/andromeda-core?branch=main)",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-asset",
@@ -168,7 +202,7 @@ dependencies = [
 name = "andromeda-swap-and-forward"
 version = "0.1.0-beta"
 dependencies = [
- "andromeda-std",
+ "andromeda-std 1.1.1",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-orch",
@@ -1199,19 +1233,6 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw4"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24754ff6e45f2a1c60adc409d9b2eb87666012c44021329141ffaab3388fccd2"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 1.2.0",
- "schemars",
- "serde",
 ]
 
 [[package]]
@@ -3218,7 +3239,7 @@ dependencies = [
  "andromeda-app",
  "andromeda-app-contract",
  "andromeda-finance",
- "andromeda-std",
+ "andromeda-std 1.1.1",
  "andromeda-swap-and-forward",
  "astroport",
  "cosmrs",
@@ -3245,7 +3266,7 @@ dependencies = [
  "andromeda-app",
  "andromeda-app-contract",
  "andromeda-finance",
- "andromeda-std",
+ "andromeda-std 1.1.1",
  "andromeda-swap-and-forward",
  "cosmrs",
  "cosmwasm-schema",
