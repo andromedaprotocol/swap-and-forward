@@ -19,10 +19,10 @@ pub struct ForwardReplyState {
     pub from_asset: Asset,
     /// Asked asset returning from the astroport
     pub to_asset: Asset,
-    /// Balance of the target asset before swapping
-    pub prev_balance: Uint128,
 }
 
 pub const FORWARD_REPLY_STATE: Item<ForwardReplyState> = Item::new("forward_reply_state");
 
 pub const SWAP_ROUTER: Item<AndrAddr> = Item::new("swap_router");
+
+pub const PREV_BALANCE: Item<Uint128> = Item::new("prev_balance");

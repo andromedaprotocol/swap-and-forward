@@ -20,7 +20,7 @@ use cosmwasm_std::{
 };
 use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg};
 
-use crate::state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER};
+use crate::state::{ForwardReplyState, FORWARD_REPLY_STATE, PREV_BALANCE, SWAP_ROUTER};
 
 use andromeda_swap_and_forward::astroport::{SimulateSwapOperationResponse, SwapOperation};
 
@@ -91,9 +91,9 @@ pub(crate) fn execute_swap_astroport_msg(
             amp_ctx,
             from_asset: from_asset.clone(),
             to_asset: to_asset.clone(),
-            prev_balance,
         },
     )?;
+    PREV_BALANCE.save(deps.storage, &prev_balance)?;
 
     let swap_router = SWAP_ROUTER
         .load(deps.storage)?
@@ -164,7 +164,8 @@ pub fn handle_astroport_swap_reply(
     state: ForwardReplyState,
 ) -> Result<Response, ContractError> {
     let balance = query_balance(&deps.as_ref(), &env, &state.to_asset)?;
-    let return_amount = balance.checked_sub(state.prev_balance)?;
+    let prev_balance = PREV_BALANCE.load(deps.storage)?;
+    let return_amount = balance.checked_sub(prev_balance)?;
 
     if return_amount.is_zero() {
         return Err(ContractError::Std(StdError::generic_err(format!(

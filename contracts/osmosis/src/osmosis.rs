@@ -13,7 +13,7 @@ use cosmwasm_std::{
 };
 use swaprouter::msg::{ExecuteMsg as OsmosisExecuteMsg, QueryMsg as OsmosisQueryMsg};
 
-use crate::state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER};
+use crate::state::{ForwardReplyState, FORWARD_REPLY_STATE, PREV_BALANCE, SWAP_ROUTER};
 
 use andromeda_swap_and_forward::osmosis::{GetRouteResponse, Slippage, SwapRoute};
 
@@ -66,9 +66,10 @@ pub(crate) fn execute_swap_osmosis_msg(
             amp_ctx,
             from_denom: from_denom.clone(),
             to_denom: to_denom.clone(),
-            prev_balance,
         },
     )?;
+
+    PREV_BALANCE.save(deps.storage, &prev_balance)?;
 
     let swap_router = SWAP_ROUTER
         .load(deps.storage)?
@@ -98,7 +99,8 @@ pub fn handle_osmosis_swap_reply(
         .querier
         .query_balance(env.contract.address.to_string(), &state.to_denom)?
         .amount;
-    let return_amount = balance.checked_sub(state.prev_balance)?;
+    let prev_balance = PREV_BALANCE.load(deps.storage)?;
+    let return_amount = balance.checked_sub(prev_balance)?;
 
     if return_amount.is_zero() {
         return Err(ContractError::Std(StdError::generic_err(format!(
