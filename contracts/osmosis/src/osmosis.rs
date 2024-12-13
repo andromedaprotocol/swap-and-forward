@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use andromeda_std::{
     ado_contract::ADOContract,
     amp::{
@@ -11,11 +9,11 @@ use andromeda_std::{
 };
 use cosmwasm_std::{
     attr, coin, ensure, to_json_binary, Coin, Deps, DepsMut, Env, Reply, Response, StdError,
-    SubMsg, SubMsgResult, Uint128, WasmMsg,
+    SubMsg, Uint128, WasmMsg,
 };
 use swaprouter::msg::{ExecuteMsg as OsmosisExecuteMsg, QueryMsg as OsmosisQueryMsg};
 
-use crate::state::{ForwardReplyState, FORWARD_REPLY_STATE, SWAP_ROUTER};
+use crate::state::{ForwardReplyState, FORWARD_REPLY_STATE, PREV_BALANCE, SWAP_ROUTER};
 
 use andromeda_swap_and_forward::osmosis::{GetRouteResponse, Slippage, SwapRoute};
 
@@ -33,7 +31,7 @@ pub(crate) fn execute_swap_osmosis_msg(
     slippage: Slippage,
     route: Option<Vec<SwapRoute>>,
 ) -> Result<SubMsg, ContractError> {
-    let ExecuteContext { deps, .. } = ctx;
+    let ExecuteContext { deps, env, .. } = ctx;
 
     // Prepare offer and ask asset
     ensure!(from_denom != to_denom, ContractError::DuplicateTokens {});
@@ -55,6 +53,11 @@ pub(crate) fn execute_swap_osmosis_msg(
     // Generate route for the `OsmosisExecuteMsg::Swap` message
     let route = route.map(|route| route.iter().map(|v| v.clone().into()).collect());
 
+    let prev_balance = deps
+        .querier
+        .query_balance(env.contract.address.to_string(), &to_denom)?
+        .amount;
+
     FORWARD_REPLY_STATE.save(
         deps.storage,
         &ForwardReplyState {
@@ -65,6 +68,8 @@ pub(crate) fn execute_swap_osmosis_msg(
             to_denom: to_denom.clone(),
         },
     )?;
+
+    PREV_BALANCE.save(deps.storage, &prev_balance)?;
 
     let swap_router = SWAP_ROUTER
         .load(deps.storage)?
@@ -90,10 +95,20 @@ pub fn handle_osmosis_swap_reply(
     msg: Reply,
     state: ForwardReplyState,
 ) -> Result<Response, ContractError> {
-    let return_amount = match parse_osmosis_swap_reply(msg) {
-        Ok(resp) => resp,
-        Err(e) => return Err(e),
-    };
+    let balance = deps
+        .querier
+        .query_balance(env.contract.address.to_string(), &state.to_denom)?
+        .amount;
+    let prev_balance = PREV_BALANCE.load(deps.storage)?;
+    let return_amount = balance.checked_sub(prev_balance)?;
+    PREV_BALANCE.remove(deps.storage);
+
+    if return_amount.is_zero() {
+        return Err(ContractError::Std(StdError::generic_err(format!(
+            "Incomplete data in Osmosis swap response: {:?}",
+            msg
+        ))));
+    }
 
     let mut resp = Response::default();
 
@@ -134,38 +149,6 @@ pub fn handle_osmosis_swap_reply(
         attr("kernel_address", kernel_address),
     ]);
     Ok(resp)
-}
-
-pub(crate) fn parse_osmosis_swap_reply(msg: Reply) -> Result<Uint128, ContractError> {
-    match msg.result {
-        SubMsgResult::Ok(response) => {
-            // Extract relevant information from events
-            let mut return_amount = Uint128::zero();
-
-            for event in response.events.iter() {
-                if event.ty == "wasm" {
-                    for attr in event.attributes.iter() {
-                        if attr.key.as_str() == "token_out_amount" {
-                            return_amount = Uint128::from_str(&attr.value)?;
-                        }
-                    }
-                }
-            }
-
-            if return_amount.is_zero() {
-                return Err(ContractError::Std(StdError::generic_err(format!(
-                    "Incomplete data in Osmosis swap response: {:?}",
-                    response.events
-                ))));
-            }
-
-            Ok(return_amount)
-        }
-        SubMsgResult::Err(err) => Err(ContractError::Std(StdError::generic_err(format!(
-            "Osmosis swap failed with error: {:?}",
-            err
-        )))),
-    }
 }
 
 pub fn query_get_route(

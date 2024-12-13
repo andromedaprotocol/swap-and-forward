@@ -22,7 +22,7 @@ mod test {
     #[allow(dead_code)]
     fn upload_ado(daemon: &Daemon) {
         let swap_and_forward_contract =
-            SwapAndForwardContract::new("swap-and-forward", daemon.clone());
+            SwapAndForwardContract::new("swap-and-forward-osmosis", daemon.clone());
         swap_and_forward_contract.upload().unwrap();
         println!(
             "swap_and_forward_contract code_id: {:?}",
@@ -38,7 +38,7 @@ mod test {
     ) -> String {
         let app_code_id = 11766;
         let kernel_address = "osmo1kjzha97wvwhpxc83dwcxad8w4cfau4k9vul2vcezuteh0n4jaf3sg9csr4";
-        let swap_ado_type = "swap-and-forward@0.1.2";
+        let swap_ado_type = "swap-and-forward-osmosis@0.1.0-b.1";
         let recipient_1 = "osmo18epw87zc64a6m63323l6je0nlwdhnjpghtsyq8";
         let recipient_2 = "osmo13refwx2f8wkjt9htss6ken96ak924k79ehf56k";
 
@@ -71,7 +71,7 @@ mod test {
 
         let splitter_init_msg = andromeda_finance::splitter::InstantiateMsg {
             recipients,
-            default_recipient: None,
+            // default_recipient: None,
             lock_time: None,
             kernel_address: kernel_address.to_string(),
             owner: None,
@@ -106,15 +106,15 @@ mod test {
     #[ignore]
     #[test]
     fn test_onchain_native() {
-        let app_name = "swap and forward ado-0.1.2";
+        let app_name = "swap and forward osmosis ado";
         let app_name_parsed = app_name.replace(' ', "_");
 
-        let swap_and_forward_component_name = "swap-and-forward";
+        let swap_and_forward_component_name = "swap-and-forward-osmosis";
         let splitter_component_name = "splitter";
 
         dotenv().ok();
         env_logger::init();
-        let mnemonic = std::env::var("TEST_MNEMONIC").expect("MNEMONIC must be set.");
+        let mnemonic = std::env::var("MNEMONIC").expect("MNEMONIC must be set.");
         let daemon = Daemon::builder(OSMO_5).mnemonic(mnemonic).build().unwrap();
         let denom = OSMO_5.gas_denom;
 
@@ -139,7 +139,7 @@ mod test {
             app_contract.get_address(swap_and_forward_component_name);
 
         let swap_and_forward_contract =
-            SwapAndForwardContract::new("swap-and-forward", daemon.clone());
+            SwapAndForwardContract::new("swap-and-forward-osmosis", daemon.clone());
         swap_and_forward_contract.set_address(&Addr::unchecked(swap_and_forward_addr.clone()));
 
         // 4. execute swap operation
@@ -147,9 +147,10 @@ mod test {
         let atom_denom =
             "ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477".to_string();
         let _res = swap_and_forward_contract.get_route("uosmo", atom_denom.clone());
-        let forward_msg =
-            to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send { config: None })
-                .unwrap();
+        let forward_msg = to_json_binary(&andromeda_finance::splitter::ExecuteMsg::Send {
+                // config: None
+            })
+        .unwrap();
         let forward_addr = Recipient::new(
             format!(
                 "/home/{}/{}/{}",
