@@ -101,6 +101,7 @@ pub fn handle_osmosis_swap_reply(
         .amount;
     let prev_balance = PREV_BALANCE.load(deps.storage)?;
     let return_amount = balance.checked_sub(prev_balance)?;
+    PREV_BALANCE.remove(deps.storage);
 
     if return_amount.is_zero() {
         return Err(ContractError::Std(StdError::generic_err(format!(

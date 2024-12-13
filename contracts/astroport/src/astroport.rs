@@ -166,6 +166,7 @@ pub fn handle_astroport_swap_reply(
     let balance = query_balance(&deps.as_ref(), &env, &state.to_asset)?;
     let prev_balance = PREV_BALANCE.load(deps.storage)?;
     let return_amount = balance.checked_sub(prev_balance)?;
+    PREV_BALANCE.remove(deps.storage);
 
     if return_amount.is_zero() {
         return Err(ContractError::Std(StdError::generic_err(format!(
